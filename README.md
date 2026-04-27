@@ -21,4 +21,5 @@ El proyecto sigue el patrón **ECS**:
 |---|---|
 | Tpmas Velasquez | t.velasquezd@uniandes.edu.co |
 | Sergio Castaño | sa.castanoa1@uniandes.edu.co |
+| Jhon Casallas | j.casallasp@uniandes.edu.co |
 
