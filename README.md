@@ -19,7 +19,7 @@ El proyecto sigue el patrón **ECS**:
 
 | Nombre | Correo |
 |---|---|
-| Tpmas Velasquez | t.velasquezd@uniandes.edu.co |
+| Tomas Velasquez | t.velasquezd@uniandes.edu.co |
 | Sergio Castaño | sa.castanoa1@uniandes.edu.co |
-| Jhon Casallas | j.casallasp@uniandes.edu.co |
+| John Casallas | j.casallasp@uniandes.edu.co |
 
