@@ -12,4 +12,8 @@ class Player:
     drag: float
     max_speed: float
     lives: int
+    max_speed_x: float
+    max_speed_y: float
+    vertical_min: float
+    vertical_max: float
     facing: float = 1.0

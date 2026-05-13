@@ -1,6 +1,42 @@
 {
-  "width": 640,
+  "width": 4096,
   "height": 256,
   "stars": 48,
-  "planet_height": 42
+  "planet_height": 42,
+  "planet": {
+    "min_y": 194,
+    "max_y": 248,
+    "segment_width": 4,
+    "parallax": 1.0,
+    "color": {
+      "r": 205,
+      "g": 106,
+      "b": 42
+    },
+    "seed": null
+  },
+  "stars_config": {
+    "layers": [
+      {
+        "count": 150,
+        "speed_min": -6,
+        "speed_max": -3,
+        "brightness_min": 110,
+        "brightness_max": 180
+      },
+      {
+        "count": 170,
+        "speed_min": -14,
+        "speed_max": -7,
+        "brightness_min": 160,
+        "brightness_max": 255
+      }
+    ]
+  },
+  "astronauts": {
+    "ground_offset": 6,
+    "walk_speed": 8.0,
+    "safe_fall_height": 36,
+    "gravity": 65.0
+  }
 }

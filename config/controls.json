@@ -1,0 +1,26 @@
+{
+  "keyboard": {
+    "move_up": ["up", "w"],
+    "move_down": ["down", "s"],
+    "move_left": ["left", "a"],
+    "move_right": ["right", "d"],
+    "fire": ["space"],
+    "pause": ["p"],
+    "smart_bomb": ["b"],
+    "confirm": ["return"],
+    "back": ["escape"],
+    "debug": ["f1"]
+  },
+  "mouse": {
+    "enabled": false,
+    "movement_mode": "optional_target"
+  },
+  "gamepad": {
+    "enabled": false,
+    "left_stick_move": true,
+    "fire_button": 0,
+    "smart_bomb_button": 1,
+    "pause_button": 7
+  }
+}
+

@@ -1,0 +1,17 @@
+{
+  "enabled": false,
+  "toggle_key": "f1",
+  "show_colliders": false,
+  "show_entity_ids": false,
+  "show_ai_states": true,
+  "show_camera_bounds": true,
+  "show_spawn_points": true,
+  "cheats": {
+    "enabled": true,
+    "complete_wave_key": "f5",
+    "kill_player_key": "f6",
+    "spawn_lander_key": "f7",
+    "trigger_abduction_key": "f8"
+  }
+}
+

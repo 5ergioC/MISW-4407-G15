@@ -1,0 +1,17 @@
+{
+  "master_volume": 0.8,
+  "music_volume": 0.8,
+  "sfx_volume": 0.9,
+  "sounds": {
+    "astronaut_fall": "snd/astronaut_fall.ogg",
+    "enemy_die": "snd/enemy_die.ogg",
+    "game_over": "snd/game_over.ogg",
+    "game_paused": "snd/game_paused.ogg",
+    "game_start": "snd/game_start.ogg",
+    "lander_capture_astronaut": "snd/lander_capture_astronaut.ogg",
+    "lander_mutate_astronaut": "snd/lander_mutate_astronaut.ogg",
+    "player_die": "snd/player_die.ogg",
+    "player_shoot": "snd/player_shoot.ogg"
+  }
+}
+

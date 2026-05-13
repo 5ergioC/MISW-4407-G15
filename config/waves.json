@@ -1,0 +1,67 @@
+{
+  "mode": "fixed_waves",
+  "loop_after_last_wave": false,
+  "waves": [
+    {
+      "id": 1,
+      "name": "Wave 1",
+      "landers": 6,
+      "mutants": 0,
+      "astronauts": 10,
+      "spawn_interval": 2.0,
+      "enemy_fire_rate": 0.8,
+      "missile_chance": 0.08,
+      "lander_speed_multiplier": 1.0,
+      "mutant_speed_multiplier": 1.0
+    },
+    {
+      "id": 2,
+      "name": "Wave 2",
+      "landers": 8,
+      "mutants": 1,
+      "astronauts": 10,
+      "spawn_interval": 1.8,
+      "enemy_fire_rate": 0.95,
+      "missile_chance": 0.1,
+      "lander_speed_multiplier": 1.08,
+      "mutant_speed_multiplier": 1.08
+    },
+    {
+      "id": 3,
+      "name": "Wave 3",
+      "landers": 10,
+      "mutants": 2,
+      "astronauts": 10,
+      "spawn_interval": 1.6,
+      "enemy_fire_rate": 1.1,
+      "missile_chance": 0.12,
+      "lander_speed_multiplier": 1.16,
+      "mutant_speed_multiplier": 1.18
+    },
+    {
+      "id": 4,
+      "name": "Wave 4",
+      "landers": 12,
+      "mutants": 3,
+      "astronauts": 10,
+      "spawn_interval": 1.4,
+      "enemy_fire_rate": 1.25,
+      "missile_chance": 0.15,
+      "lander_speed_multiplier": 1.24,
+      "mutant_speed_multiplier": 1.28
+    },
+    {
+      "id": 5,
+      "name": "Wave 5",
+      "landers": 14,
+      "mutants": 4,
+      "astronauts": 10,
+      "spawn_interval": 1.2,
+      "enemy_fire_rate": 1.4,
+      "missile_chance": 0.18,
+      "lander_speed_multiplier": 1.32,
+      "mutant_speed_multiplier": 1.4
+    }
+  ]
+}
+

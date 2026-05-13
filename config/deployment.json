@@ -1,0 +1,10 @@
+{
+  "target": "web",
+  "preferred_portal": "itch.io",
+  "fallback_portals": ["GameJolt", "Newgrounds"],
+  "web_tool": "pygbag",
+  "desktop_fallback": "windows",
+  "requires_description": true,
+  "requires_screenshot": true,
+  "requires_source_tag": true
+}

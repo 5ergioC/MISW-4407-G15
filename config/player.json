@@ -1,7 +1,7 @@
 {
   "spawn": {
     "x": 160,
-    "y": 110
+    "y": 170
   },
   "size": {
     "w": 12,
@@ -10,7 +10,21 @@
   "thrust": 240.0,
   "drag": 0.92,
   "max_speed": 160.0,
+  "max_speed_x": 130.0,
+  "max_speed_y": 100.0,
+  "vertical_margin_top": 48,
+  "vertical_margin_bottom": 30,
   "laser_speed": 250.0,
   "fire_cooldown": 0.18,
-  "lives": 3
+  "laser_lifetime": 0.9,
+  "lives": 3,
+  "smart_bombs": 3,
+  "extra_life_score_interval": 10000,
+  "extra_bomb_score_interval": 10000,
+  "camera": {
+    "mode": "defender_look_ahead",
+    "look_ahead_x": 30,
+    "smoothness": 5.0,
+    "look_ahead_speed_threshold": 24.0
+  }
 }
