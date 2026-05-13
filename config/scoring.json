@@ -1,4 +1,13 @@
 {
   "enemy_destroyed": 150,
-  "astronaut_saved": 250
+  "lander_destroyed": 150,
+  "mutant_destroyed": 150,
+  "enemy_bullet_destroyed": 25,
+  "enemy_missile_destroyed": 50,
+  "astronaut_saved": 250,
+  "astronaut_rescued_falling": 500,
+  "astronaut_deposited": 500,
+  "wave_completed_base": 1000,
+  "wave_completed_per_astronaut": 100,
+  "accidental_astronaut_kill": 0
 }

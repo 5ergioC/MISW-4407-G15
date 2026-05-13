@@ -13,4 +13,7 @@ class Renderable:
     layer: int = 0
     visible: bool = True
     text: str = ""
+    image_path: str = ""
+    centered: bool = False
+    flip_x: bool = False
     points: list[tuple[float, float]] = field(default_factory=list)
