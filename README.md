@@ -1,25 +1,39 @@
-# Defender — Grupo 15
-### Proyecto Final · MISW-4407 Introducción al Desarrollo de Videojuegos
+# Defender - Grupo 15
 
-> Reproducción del clásico arcade **Defender** (Williams Electronics, 1981), desarrollado en Python con Pygame, siguiendo arquitectura **ECS (Entity-Component-System)**.
+Proyecto final de la asignatura MISW-4407. El objetivo es desarrollar un clon funcional de Defender en Python usando una arquitectura ECS (Entity-Component-System) como base principal del codigo.
 
----
+## Tecnologias
 
-## Arquitectura
+- Python
+- pygame-ce
+- esper
+- JSON para configuracion
 
-El proyecto sigue el patrón **ECS**:
+## Arquitectura general
 
-- **Entidades**: Nave, Lander, Mutant, Astronauta, Bala, Explosión, etc.
-- **Componentes**: Transform, Velocity, Sprite, Health, AI, Collider, Input, etc.
-- **Sistemas**: RenderSystem, MovementSystem, CollisionSystem, AISystem, InputSystem, etc.
+El proyecto esta organizado alrededor de:
 
----
+- entidades
+- componentes
+- sistemas
+- escenas
+- servicios compartidos
 
-## Equipo — Grupo 15
+La logica principal del juego se implementa mediante sistemas ECS, mientras que las escenas controlan el flujo general de la aplicacion.
+
+## Equipo - Grupo 15
 
 | Nombre | Correo |
 |---|---|
 | Tomas Velasquez | t.velasquezd@uniandes.edu.co |
-| Sergio Castaño | sa.castanoa1@uniandes.edu.co |
+| Sergio Castano | sa.castanoa1@uniandes.edu.co |
 | John Casallas | j.casallasp@uniandes.edu.co |
 
+## Estructura del proyecto
+
+```text
+main.py
+config/
+assets/
+src/
+```
