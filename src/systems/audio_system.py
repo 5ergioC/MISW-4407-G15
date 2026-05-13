@@ -1,5 +1,5 @@
 from src.components.audio_event import AudioEvent
-from src.core.service_locator import ServiceLocator
+from src.engine.service_locator import ServiceLocator
 
 
 class AudioSystem:
@@ -7,7 +7,7 @@ class AudioSystem:
         del dt
         to_remove: list[tuple[int, AudioEvent]] = []
         for entity, (audio_event,) in world.get_components(AudioEvent):
-            ServiceLocator.audio.play(audio_event.sound_path)
+            ServiceLocator.sounds_service.play(audio_event.sound_path)
             to_remove.append((entity, audio_event))
         for entity, audio_event in to_remove:
             world.remove_component(entity, AudioEvent)

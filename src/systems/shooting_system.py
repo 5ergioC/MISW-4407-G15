@@ -4,7 +4,7 @@ import pygame
 
 from src.components.player import Player
 from src.components.transform import Transform
-from src.core.service_locator import ServiceLocator
+from src.engine.service_locator import ServiceLocator
 from src.factories.entity_factory import create_laser
 
 
