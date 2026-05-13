@@ -4,13 +4,13 @@ import pygame
 
 from src.commands.scene_command import SceneCommand
 from src.core.scene import Scene
+from src.engine.service_locator import ServiceLocator
 from src.systems.input_command_system import InputCommandSystem
 
 
 class GameOverScene(Scene):
     def enter(self) -> None:
-        self.title_font = pygame.font.Font(None, 36)
-        self.body_font = pygame.font.Font(None, 18)
+        self.interface_cfg = ServiceLocator.config.get("interface")
         self.input_system = InputCommandSystem(
             {
                 pygame.K_RETURN: SceneCommand(lambda: self.switch_to("menu")),
@@ -26,13 +26,21 @@ class GameOverScene(Scene):
 
     def render(self) -> None:
         surface = self.virtual_screen
-        title = self.title_font.render("GAME OVER", True, pygame.Color(255, 90, 90))
-        reason = self.body_font.render(
-            str(self.engine.shared_state.get("game_over_reason", "Try again")),
-            True,
-            pygame.Color("white"),
+        font_path = self.interface_cfg["font"]["path"]
+        pause_color = self.interface_cfg["pause_text_color"]
+        normal_color = self.interface_cfg["normal_text_color"]
+        title = ServiceLocator.texts_service.render(
+            font_path, 16, "GAME OVER", (pause_color["r"], pause_color["g"], pause_color["b"])
         )
-        prompt = self.body_font.render("Press ENTER to return", True, pygame.Color("white"))
+        reason = ServiceLocator.texts_service.render(
+            font_path,
+            8,
+            str(self.engine.shared_state.get("game_over_reason", "Try again")),
+            (normal_color["r"], normal_color["g"], normal_color["b"]),
+        )
+        prompt = ServiceLocator.texts_service.render(
+            font_path, 8, "Press ENTER to return", (normal_color["r"], normal_color["g"], normal_color["b"])
+        )
         surface.blit(title, title.get_rect(center=(160, 100)))
         surface.blit(reason, reason.get_rect(center=(160, 136)))
         surface.blit(prompt, prompt.get_rect(center=(160, 164)))

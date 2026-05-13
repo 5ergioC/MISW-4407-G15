@@ -13,7 +13,7 @@ from src.components.renderable import Renderable
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.components.wraparound import Wraparound
-from src.core.service_locator import ServiceLocator
+from src.engine.service_locator import ServiceLocator
 
 
 def create_player(world) -> int:

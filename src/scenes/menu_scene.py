@@ -4,13 +4,14 @@ import pygame
 
 from src.commands.scene_command import SceneCommand
 from src.core.scene import Scene
+from src.engine.service_locator import ServiceLocator
 from src.systems.input_command_system import InputCommandSystem
 
 
 class MenuScene(Scene):
     def enter(self) -> None:
-        self.title_font = pygame.font.Font(None, 36)
-        self.body_font = pygame.font.Font(None, 18)
+        self.interface_cfg = ServiceLocator.config.get("interface")
+        self.logo_surface = ServiceLocator.images_service.get("img/game_logo.png")
         self.input_system = InputCommandSystem(
             {
                 pygame.K_RETURN: SceneCommand(self._start_game),
@@ -30,11 +31,24 @@ class MenuScene(Scene):
 
     def render(self) -> None:
         surface = self.virtual_screen
-        title = self.title_font.render("DEFENDER CLONE", True, pygame.Color(120, 255, 240))
-        subtitle = self.body_font.render("Press ENTER to start", True, pygame.Color("white"))
-        help_one = self.body_font.render("Arrows move, SPACE fires, P pauses", True, pygame.Color("white"))
-        help_two = self.body_font.render("This base is ready for ECS gameplay systems", True, pygame.Color(180, 190, 220))
-        surface.blit(title, title.get_rect(center=(160, 92)))
-        surface.blit(subtitle, subtitle.get_rect(center=(160, 128)))
-        surface.blit(help_one, help_one.get_rect(center=(160, 156)))
-        surface.blit(help_two, help_two.get_rect(center=(160, 182)))
+        title_color = self.interface_cfg["title_text_color"]
+        normal_color = self.interface_cfg["normal_text_color"]
+        font_path = self.interface_cfg["font"]["path"]
+        title = ServiceLocator.texts_service.render(
+            font_path, 20, "DEFENDER CLONE", (title_color["r"], title_color["g"], title_color["b"])
+        )
+        subtitle = ServiceLocator.texts_service.render(
+            font_path, 10, "Press ENTER to start", (normal_color["r"], normal_color["g"], normal_color["b"])
+        )
+        help_one = ServiceLocator.texts_service.render(
+            font_path, 8, "Arrows move, SPACE fires, P pauses", (normal_color["r"], normal_color["g"], normal_color["b"])
+        )
+        help_two = ServiceLocator.texts_service.render(
+            font_path, 8, "ECS architecture with engine services", (normal_color["r"], normal_color["g"], normal_color["b"])
+        )
+        logo_rect = self.logo_surface.get_rect(center=(160, 72))
+        surface.blit(self.logo_surface, logo_rect)
+        surface.blit(title, title.get_rect(center=(160, 128)))
+        surface.blit(subtitle, subtitle.get_rect(center=(160, 154)))
+        surface.blit(help_one, help_one.get_rect(center=(160, 184)))
+        surface.blit(help_two, help_two.get_rect(center=(160, 204)))

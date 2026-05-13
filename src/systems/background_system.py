@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pygame
 
-from src.core.service_locator import ServiceLocator
+from src.engine.service_locator import ServiceLocator
 
 
 class BackgroundSystem:

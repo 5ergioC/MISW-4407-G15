@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pygame
 
-from src.core.service_locator import ServiceLocator
+from src.engine.service_locator import ServiceLocator
 from src.scenes.game_over_scene import GameOverScene
 from src.scenes.menu_scene import MenuScene
 from src.scenes.play_scene import PlayScene
