@@ -1,0 +1,16 @@
+{
+  "spawn": {
+    "x": 160,
+    "y": 110
+  },
+  "size": {
+    "w": 12,
+    "h": 8
+  },
+  "thrust": 240.0,
+  "drag": 0.92,
+  "max_speed": 160.0,
+  "laser_speed": 250.0,
+  "fire_cooldown": 0.18,
+  "lives": 3
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Defender Clone - Grupo 15",
+  "size": {
+    "w": 960,
+    "h": 768
+  },
+  "virtual_size": {
+    "w": 320,
+    "h": 256
+  },
+  "framerate": 60,
+  "bg_color": {
+    "r": 2,
+    "g": 6,
+    "b": 18
+  }
+}
