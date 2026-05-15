@@ -11,6 +11,8 @@ from src.systems.input_command_system import InputCommandSystem
 class GameOverScene(Scene):
     def enter(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
+        self.background = self.engine.virtual_screen.copy()
+        self.elapsed = 0.0
         self.input_system = InputCommandSystem(
             {
                 pygame.K_RETURN: SceneCommand(lambda: self.switch_to("menu")),
@@ -22,10 +24,14 @@ class GameOverScene(Scene):
         self.input_system.process_event(self.world, event)
 
     def update(self, dt: float) -> None:
-        del dt
+        self.elapsed += dt
 
     def render(self) -> None:
         surface = self.virtual_screen
+        surface.blit(self.background, (0, 0))
+        overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        overlay.fill((12, 6, 6, 104))
+        surface.blit(overlay, (0, 0))
         font_path = self.interface_cfg["font"]["path"]
         pause_color = self.interface_cfg["pause_text_color"]
         normal_color = self.interface_cfg["normal_text_color"]
@@ -39,8 +45,9 @@ class GameOverScene(Scene):
             (normal_color["r"], normal_color["g"], normal_color["b"]),
         )
         prompt = ServiceLocator.texts_service.render(
-            font_path, 8, "Press ENTER to return", (normal_color["r"], normal_color["g"], normal_color["b"])
+            font_path, 8, "Press RETURN to return", (normal_color["r"], normal_color["g"], normal_color["b"])
         )
-        surface.blit(title, title.get_rect(center=(160, 100)))
-        surface.blit(reason, reason.get_rect(center=(160, 136)))
-        surface.blit(prompt, prompt.get_rect(center=(160, 164)))
+        surface.blit(title, title.get_rect(center=(160, 96)))
+        surface.blit(reason, reason.get_rect(center=(160, 118)))
+        if int(self.elapsed * 2.0) % 2 == 0:
+            surface.blit(prompt, prompt.get_rect(center=(160, 154)))
