@@ -61,28 +61,29 @@ def create_player(world) -> int:
     return entity
 
 
-def create_laser(world, position: pygame.Vector2, direction: float) -> int:
+def create_laser(world, position: pygame.Vector2, direction: float, owner_velocity_x: float = 0.0) -> int:
     player_cfg = ServiceLocator.config.get("player")
     entity = world.create_entity()
-    velocity = pygame.Vector2(direction, 0) * player_cfg["laser_speed"]
+    velocity = pygame.Vector2(direction * player_cfg["laser_speed"] + owner_velocity_x, 0)
+    laser_size = pygame.Vector2(40, 1)
     world.add_component(entity, Transform(position.copy()))
     world.add_component(entity, Velocity(velocity))
     world.add_component(
         entity,
         Renderable(
             shape="rect",
-            size=pygame.Vector2(8, 2),
+            size=laser_size,
             color=pygame.Color(255, 240, 150),
             layer=8,
         ),
     )
-    world.add_component(entity, Collider(pygame.Vector2(8, 2), pygame.Vector2()))
+    world.add_component(entity, Collider(laser_size, pygame.Vector2()))
     world.add_component(
         entity,
-        Projectile(owner="player", direction=pygame.Vector2(direction, 0), speed=velocity.length(), damage=1),
+        Projectile(owner="player", direction=pygame.Vector2(direction, 0), speed=abs(velocity.x), damage=1),
     )
     world.add_component(entity, Laser())
-    world.add_component(entity, Lifetime(0.9))
+    world.add_component(entity, Lifetime(player_cfg["laser_lifetime"]))
     return entity
 
 

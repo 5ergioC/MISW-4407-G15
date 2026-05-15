@@ -4,6 +4,7 @@ import pygame
 
 from src.components.player import Player
 from src.components.transform import Transform
+from src.components.velocity import Velocity
 from src.engine.service_locator import ServiceLocator
 from src.factories.entity_factory import create_laser
 
@@ -19,8 +20,8 @@ class ShootingSystem:
     def fire(self, world) -> None:
         if self.cooldown > 0:
             return
-        for _, (transform, player) in world.get_components(Transform, Player):
-            offset = pygame.Vector2(8 * player.facing, 0)
-            create_laser(world, transform.position + offset, player.facing)
+        for _, (transform, velocity, player) in world.get_components(Transform, Velocity, Player):
+            offset = pygame.Vector2(6 * player.facing, 0)
+            create_laser(world, transform.position + offset, player.facing, velocity.value.x)
             self.cooldown = self.player_cfg["fire_cooldown"]
             break
