@@ -12,6 +12,7 @@ from src.factories.entity_factory import create_laser
 class ShootingSystem:
     def __init__(self) -> None:
         self.player_cfg = ServiceLocator.config.get("player")
+        self.audio_cfg = ServiceLocator.config.get("audio")
         self.cooldown = 0.0
 
     def update(self, dt: float) -> None:
@@ -23,5 +24,6 @@ class ShootingSystem:
         for _, (transform, velocity, player) in world.get_components(Transform, Velocity, Player):
             offset = pygame.Vector2(6 * player.facing, 0)
             create_laser(world, transform.position + offset, player.facing, velocity.value.x)
+            ServiceLocator.sounds_service.play(self.audio_cfg["sounds"]["player_shoot"])
             self.cooldown = self.player_cfg["fire_cooldown"]
             break

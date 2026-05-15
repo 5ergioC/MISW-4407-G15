@@ -11,8 +11,10 @@ from src.systems.input_command_system import InputCommandSystem
 class GameOverScene(Scene):
     def enter(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
+        self.audio_cfg = ServiceLocator.config.get("audio")
         self.background = self.engine.virtual_screen.copy()
         self.elapsed = 0.0
+        ServiceLocator.sounds_service.play(self.audio_cfg["sounds"]["game_over"])
         self.input_system = InputCommandSystem(
             {
                 pygame.K_RETURN: SceneCommand(lambda: self.switch_to("menu")),
