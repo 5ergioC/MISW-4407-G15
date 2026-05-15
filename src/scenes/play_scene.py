@@ -118,6 +118,15 @@ class PlayScene(Scene):
             if c_input.phase == CommandPhase.START:
                 self._toggle_pause()
 
+        elif c_input.name == "PLAYER_LOSE_LIFE":
+            from src.components.input_command import CommandPhase
+            if c_input.phase == CommandPhase.START:
+                lives = int(self.engine.shared_state["lives"])
+                self.engine.shared_state["lives"] = max(0, lives - 1)
+                if self.engine.shared_state["lives"] <= 0:
+                    self.engine.shared_state["game_over_reason"] = "No lives left"
+                    self.switch_to("game_over")
+
         elif c_input.name == "PLAYER_WIN":
             from src.components.input_command import CommandPhase
             if c_input.phase == CommandPhase.START:

@@ -8,6 +8,17 @@ from src.engine.service_locator import ServiceLocator
 class HUDSystem:
     def __init__(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
+        raw_lives_icon = ServiceLocator.images_service.get("img/interface_lives.png")
+        scaled_size = (
+            max(1, round(raw_lives_icon.get_width() * 0.7)),
+            max(1, round(raw_lives_icon.get_height() * 0.7)),
+        )
+        scaled_lives_icon = pygame.transform.smoothscale(raw_lives_icon, scaled_size)
+        self.lives_icon = pygame.mask.from_surface(scaled_lives_icon).to_surface(
+            setcolor=(255, 255, 255, 255),
+            unsetcolor=(0, 0, 0, 0),
+        )
+        self.lives_icon = ServiceLocator.images_service.get("img/interface_lives.png")
 
     def render(
         self,
@@ -19,14 +30,12 @@ class HUDSystem:
     ) -> None:
         self._render_scanner(surface, camera, planet_points or [])
         font_path = self.interface_cfg["font"]["path"]
-        normal_color = self.interface_cfg["normal_text_color"]
         pause_color = self.interface_cfg["pause_text_color"]
         text_color = (255, 244, 72)
         score_text = ServiceLocator.texts_service.render(font_path, 16, f"{shared_state['score']:05}", text_color)
-        lives_text = ServiceLocator.texts_service.render(font_path, 8, f"LIVES {shared_state['lives']}", text_color)
         enemies_text = ServiceLocator.texts_service.render(font_path, 8, "ENEMIES 0", text_color)
         surface.blit(score_text, (26, 16))
-        surface.blit(lives_text, (8, 4))
+        self._render_lives(surface, int(shared_state["lives"]))
         surface.blit(enemies_text, (236, 7))
         if paused and pygame.time.get_ticks() // 250 % 2 == 0:
             paused_text = ServiceLocator.texts_service.render(
@@ -34,6 +43,20 @@ class HUDSystem:
             )
             rect = paused_text.get_rect(center=(160, 118))
             surface.blit(paused_text, rect)
+
+    def _render_lives(self, surface: pygame.Surface, lives: int) -> None:
+        icon = self.lives_icon
+        font_path = self.interface_cfg["font"]["path"]
+        text_color = (255, 255, 255)
+        label = ServiceLocator.texts_service.render(font_path, 6, "LIVES", text_color)
+        label_rect = label.get_rect(topleft=(8, 3))
+        surface.blit(label, label_rect)
+
+        icon_y = 12
+        icon_x = 8
+        spacing = max(5, icon.get_width() + 3)
+        for index in range(max(0, lives)):
+            surface.blit(icon, (icon_x + index * spacing, icon_y))
 
     def _render_scanner(
         self,
