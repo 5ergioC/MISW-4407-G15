@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import pygame
 
-from src.components.camera import Camera
 from src.commands.move_command import MoveCommand
-from src.commands.pause_command import PauseCommand
-from src.commands.scene_command import SceneCommand
-from src.commands.shoot_command import ShootCommand
+from src.components.camera import Camera
+from src.components.input_command import InputCommand
 from src.core.scene import Scene
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_audio_event, create_planet, create_player, create_starfield
+from src.factories.entity_factory import (
+    create_audio_event,
+    create_input_commands,
+    create_planet,
+    create_player,
+    create_starfield,
+)
 from src.systems.abduction_system import AbductionSystem
 from src.systems.animation_system import AnimationSystem
 from src.systems.astronaut_system import AstronautSystem
@@ -20,7 +24,7 @@ from src.systems.collision_system import CollisionSystem
 from src.systems.enemy_spawn_system import EnemySpawnSystem
 from src.systems.gravity_system import GravitySystem
 from src.systems.hud_system import HUDSystem
-from src.systems.input_command_system import InputCommandSystem
+from src.systems.input_command_system import system_input_command
 from src.systems.lander_ai_system import LanderAISystem
 from src.systems.lifetime_system import LifetimeSystem
 from src.systems.movement_system import MovementSystem
@@ -76,26 +80,12 @@ class PlayScene(Scene):
         self.lifetime_system = LifetimeSystem()
         self.shooting_system = ShootingSystem()
         self._create_world()
-        self.input_system = InputCommandSystem(
-            {
-                pygame.K_LEFT: MoveCommand(pygame.Vector2(-1, 0)),
-                pygame.K_a: MoveCommand(pygame.Vector2(-1, 0)),
-                pygame.K_RIGHT: MoveCommand(pygame.Vector2(1, 0)),
-                pygame.K_d: MoveCommand(pygame.Vector2(1, 0)),
-                pygame.K_UP: MoveCommand(pygame.Vector2(0, -1)),
-                pygame.K_w: MoveCommand(pygame.Vector2(0, -1)),
-                pygame.K_DOWN: MoveCommand(pygame.Vector2(0, 1)),
-                pygame.K_s: MoveCommand(pygame.Vector2(0, 1)),
-                pygame.K_SPACE: ShootCommand(self.shooting_system.fire),
-                pygame.K_p: PauseCommand(self._toggle_pause),
-                pygame.K_ESCAPE: SceneCommand(lambda: self.switch_to("menu")),
-            }
-        )
 
     def _create_world(self) -> None:
         create_starfield(self.world)
         create_planet(self.world)
         create_player(self.world)
+        create_input_commands(self.world)
         create_audio_event(self.world, "snd/game_start.ogg")
 
     def _toggle_pause(self) -> None:
@@ -106,8 +96,35 @@ class PlayScene(Scene):
             self.state = GameState.PLAYING
             self.pause_visibility_system.set_paused(self.world, False)
 
+    def _do_action(self, c_input: InputCommand) -> None:
+        move_commands = {
+            "PLAYER_LEFT": MoveCommand(pygame.Vector2(-1, 0)),
+            "PLAYER_RIGHT": MoveCommand(pygame.Vector2(1, 0)),
+            "PLAYER_UP": MoveCommand(pygame.Vector2(0, -1)),
+            "PLAYER_DOWN": MoveCommand(pygame.Vector2(0, 1)),
+        }
+
+        if c_input.name in move_commands:
+            move_commands[c_input.name].execute_with_phase(self.world, c_input)
+
+        elif c_input.name == "PLAYER_FIRE":
+            if hasattr(c_input, 'phase'):
+                from src.components.input_command import CommandPhase
+                if c_input.phase == CommandPhase.START:
+                    self.shooting_system.fire(self.world)
+
+        elif c_input.name == "PLAYER_PAUSE":
+            from src.components.input_command import CommandPhase
+            if c_input.phase == CommandPhase.START:
+                self._toggle_pause()
+
+        elif c_input.name == "PLAYER_MENU":
+            from src.components.input_command import CommandPhase
+            if c_input.phase == CommandPhase.START:
+                self.switch_to("menu")
+
     def handle_event(self, event: pygame.event.Event) -> None:
-        self.input_system.process_event(self.world, event)
+        system_input_command(self.world, event, self._do_action)
 
     def update(self, dt: float) -> None:
         if self.state == GameState.PAUSED:
