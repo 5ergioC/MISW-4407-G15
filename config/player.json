@@ -7,7 +7,7 @@
     "w": 12,
     "h": 8
   },
-  "thrust": 1024.0,
+  "thrust": 2048.0,
   "drag": 0.92,
   "max_speed": 16000.0,
   "max_speed_x": 13000.0,

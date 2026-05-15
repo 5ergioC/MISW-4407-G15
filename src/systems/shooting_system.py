@@ -25,5 +25,7 @@ class ShootingSystem:
             offset = pygame.Vector2(6 * player.facing, 0)
             create_laser(world, transform.position + offset, player.facing, velocity.value.x)
             ServiceLocator.sounds_service.play(self.audio_cfg["sounds"]["player_shoot"])
+
+            player.is_shooting = True
             self.cooldown = self.player_cfg["fire_cooldown"]
             break

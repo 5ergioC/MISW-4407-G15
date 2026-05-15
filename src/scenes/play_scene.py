@@ -41,6 +41,10 @@ from src.systems.shooting_system import ShootingSystem
 from src.systems.wraparound_system import WraparoundSystem
 from src.states.game_state import GameState
 
+from src.components.player import Player
+from src.components.transform import Transform
+from src.components.velocity import Velocity
+
 
 class PlayScene(Scene):
     def enter(self) -> None:
@@ -170,6 +174,10 @@ class PlayScene(Scene):
         self.background_system.render(surface)
         self.planet_system.render(self.world, surface, self.camera)
         self.render_system.render(self.world, surface, self.camera)
+
+        
+        for _, (_, _, player) in self.world.get_components(Transform, Velocity, Player):
+            player.is_shooting = False
         enemy_count = len(self.world.get_components(Enemy))
         self.hud_system.render(
             surface,
