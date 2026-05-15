@@ -9,6 +9,7 @@ from src.components.renderable import Renderable
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.engine.service_locator import ServiceLocator
+from src.components.player import Player
 
 
 class RenderSystem:
@@ -23,7 +24,7 @@ class RenderSystem:
                 velocity_x = world.component_for_entity(entity, Velocity).value.x
             is_laser = world.has_component(entity, Laser)
             render_queue.append((renderable.layer, entity, transform, renderable, parallax, velocity_x, is_laser))
-        for _, _, transform, renderable, parallax, velocity_x, is_laser in sorted(render_queue, key=lambda item: item[0]):
+        for _, entity, transform, renderable, parallax, velocity_x, is_laser in sorted(render_queue, key=lambda item: item[0]):
             if not renderable.visible:
                 continue
             screen_x = self._world_to_screen_x(transform.position.x, camera, parallax)
@@ -54,6 +55,43 @@ class RenderSystem:
                     rect.center = (round(screen_x), screen_y)
                 else:
                     rect.topleft = (round(screen_x), screen_y)
+
+                if world.has_component(entity, Player):
+                    player = world.component_for_entity(entity, Player)
+                    if player.thrust_input.length_squared() > 0.0 or player.is_shooting:
+                        try:
+                            sheet = ServiceLocator.images_service.get("img/player_burner_moving.png")
+                            frame_count = 3
+                            frame_w = sheet.get_width() // frame_count if frame_count > 0 else sheet.get_width()
+                            frame_h = sheet.get_height()
+                            frame_index = player.thrust_anim_frame % frame_count
+                            flame = sheet.subsurface(pygame.Rect(frame_w * frame_index, 0, frame_w, frame_h)).copy()
+                        except Exception:
+                            try:
+                                flame = ServiceLocator.images_service.get("img/player_burner_idle.png")
+                            except Exception:
+                                flame = None
+                        if flame is not None:
+                            if renderable.flip_x:
+                                flame = pygame.transform.flip(flame, True, False)
+                            try:
+                                scale_factor = 1
+                                fw = max(1, int(flame.get_width() * scale_factor))
+                                fh = max(1, int(flame.get_height() * scale_factor))
+                                flame = pygame.transform.smoothscale(flame, (fw, fh))
+                            except Exception:
+                                pass
+                            flame_rect = flame.get_rect()
+                            offset_x = -int(rect.width * 0.45)
+                            offset_y = int(rect.height * 0.15)
+                            if renderable.flip_x:
+                                offset_x = -offset_x
+                            if renderable.centered:
+                                flame_rect.center = (rect.centerx + offset_x, rect.centery + offset_y)
+                            else:
+                                flame_rect.topleft = (rect.left + offset_x, rect.top + offset_y)
+                            surface.blit(flame, flame_rect)
+
                 surface.blit(image, rect)
 
     def _draw_laser(self, surface: pygame.Surface, screen_x: int, screen_y: int, renderable: Renderable, velocity_x: float) -> None:
