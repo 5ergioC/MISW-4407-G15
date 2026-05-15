@@ -14,11 +14,13 @@ from src.systems.input_command_system import InputCommandSystem
 class WinScene(Scene):
     def enter(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
+        self.audio_cfg = ServiceLocator.config.get("audio")
         self.background = self.engine.virtual_screen.copy()
         self.elapsed = 0.0
         self.fireworks: list[dict[str, object]] = []
         self.spawn_timer = 0.0
         self.rng = random.Random(1337)
+        ServiceLocator.sounds_service.play(self.audio_cfg["sounds"]["game_win"])
         self.input_system = InputCommandSystem(
             {
                 pygame.K_RETURN: SceneCommand(lambda: self.switch_to("menu")),
