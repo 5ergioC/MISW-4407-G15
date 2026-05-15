@@ -7,6 +7,7 @@ import pygame
 from src.components.audio_event import AudioEvent
 from src.components.collider import Collider
 from src.components.camera import CameraTarget
+from src.components.input_command import InputCommand
 from src.components.laser import Laser
 from src.components.lifetime import Lifetime
 from src.components.parallax import Parallax
@@ -180,3 +181,23 @@ def _choose_planet_target_y(rng: random.Random, min_y: int, max_y: int) -> float
     if roll < 0.66:
         return rng.uniform((min_y + max_y) / 2 - 5, (min_y + max_y) / 2 + 8)
     return rng.uniform(min_y + 8, max_y - 8)
+
+
+def create_input_commands(world) -> None:
+    input_map = {
+        pygame.K_LEFT: "PLAYER_LEFT",
+        pygame.K_a: "PLAYER_LEFT",
+        pygame.K_RIGHT: "PLAYER_RIGHT",
+        pygame.K_d: "PLAYER_RIGHT",
+        pygame.K_UP: "PLAYER_UP",
+        pygame.K_w: "PLAYER_UP",
+        pygame.K_DOWN: "PLAYER_DOWN",
+        pygame.K_s: "PLAYER_DOWN",
+        pygame.K_SPACE: "PLAYER_FIRE",
+        pygame.K_p: "PLAYER_PAUSE",
+        pygame.K_ESCAPE: "PLAYER_MENU",
+    }
+    
+    for key, name in input_map.items():
+        entity = world.create_entity()
+        world.add_component(entity, InputCommand(name=name, key=key))
