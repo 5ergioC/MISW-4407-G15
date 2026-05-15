@@ -196,6 +196,7 @@ def create_input_commands(world) -> None:
         pygame.K_s: "PLAYER_DOWN",
         pygame.K_SPACE: "PLAYER_FIRE",
         pygame.K_p: "PLAYER_PAUSE",
+        pygame.K_v: "PLAYER_WIN",
         pygame.K_ESCAPE: "PLAYER_MENU",
     }
     

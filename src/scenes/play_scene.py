@@ -118,6 +118,12 @@ class PlayScene(Scene):
             if c_input.phase == CommandPhase.START:
                 self._toggle_pause()
 
+        elif c_input.name == "PLAYER_WIN":
+            from src.components.input_command import CommandPhase
+            if c_input.phase == CommandPhase.START:
+                self.engine.reset_run_state()
+                self.switch_to("win")
+
         elif c_input.name == "PLAYER_MENU":
             from src.components.input_command import CommandPhase
             if c_input.phase == CommandPhase.START:
