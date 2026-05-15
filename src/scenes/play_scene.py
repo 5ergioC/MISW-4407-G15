@@ -14,6 +14,7 @@ from src.factories.entity_factory import (
     create_player,
     create_starfield,
 )
+from src.components.enemy import Enemy
 from src.systems.abduction_system import AbductionSystem
 from src.systems.animation_system import AnimationSystem
 from src.systems.astronaut_system import AstronautSystem
@@ -169,10 +170,12 @@ class PlayScene(Scene):
         self.background_system.render(surface)
         self.planet_system.render(self.world, surface, self.camera)
         self.render_system.render(self.world, surface, self.camera)
+        enemy_count = len(self.world.get_components(Enemy))
         self.hud_system.render(
             surface,
             self.engine.shared_state,
             self.state == GameState.PAUSED,
             self.camera,
             self.planet_system.points,
+            enemy_count,
         )
