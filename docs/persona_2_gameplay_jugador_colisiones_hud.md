@@ -202,4 +202,3 @@ Una tarea de este rol esta terminada cuando:
 - [ ] Game Over por perdida total de astronautas, integrado con Persona 3.
 - [ ] Victoria por completar nivel.
 - [ ] Command usado para input.
-

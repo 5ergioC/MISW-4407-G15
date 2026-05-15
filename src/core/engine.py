@@ -35,6 +35,7 @@ class GameEngine:
         self.shared_state: dict[str, object] = {
             "score": 0,
             "lives": ServiceLocator.config.get("player")["lives"],
+            "smart_bombs": ServiceLocator.config.get("player")["smart_bombs"],
             "level_complete": False,
             "game_over_reason": "",
         }
@@ -49,6 +50,7 @@ class GameEngine:
     def reset_run_state(self) -> None:
         self.shared_state["score"] = 0
         self.shared_state["lives"] = ServiceLocator.config.get("player")["lives"]
+        self.shared_state["smart_bombs"] = ServiceLocator.config.get("player")["smart_bombs"]
         self.shared_state["level_complete"] = False
         self.shared_state["game_over_reason"] = ""
 
