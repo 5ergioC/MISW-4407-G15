@@ -10,6 +10,7 @@ from src.engine.service_locator import ServiceLocator
 from src.factories.entity_factory import (
     create_audio_event,
     create_input_commands,
+    create_player_death_fx,
     create_planet,
     create_player,
     create_starfield,
@@ -42,6 +43,7 @@ from src.systems.wraparound_system import WraparoundSystem
 from src.states.game_state import GameState
 
 from src.components.player import Player
+from src.components.renderable import Renderable
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 
@@ -84,6 +86,10 @@ class PlayScene(Scene):
         self.wraparound_system = WraparoundSystem()
         self.lifetime_system = LifetimeSystem()
         self.shooting_system = ShootingSystem()
+        self.player_respawn_delay = 0.9
+        self.player_respawn_timer = 0.0
+        self.player_dying = False
+        self.player_death_outcome: str | None = None
         self._create_world()
 
     def _create_world(self) -> None:
@@ -96,12 +102,28 @@ class PlayScene(Scene):
     def _reset_run_after_player_death(self) -> None:
         self.world.clear_database()
         self.enemy_spawn_system.reset()
+        self.player_respawn_timer = 0.0
+        self.player_dying = False
+        self.player_death_outcome = None
         self._create_world()
 
-    def _on_player_enemy_collision(self) -> None:
+    def _on_player_enemy_collision(self, player_position: pygame.Vector2) -> None:
+        if self.player_dying:
+            return
         lives = max(0, int(self.engine.shared_state["lives"]) - 1)
         self.engine.shared_state["lives"] = lives
-        if lives <= 0:
+        self.player_death_outcome = "respawn" if lives > 0 else "game_over"
+        self.player_dying = True
+        self.player_respawn_timer = self.player_respawn_delay
+        create_player_death_fx(self.world, player_position)
+        ServiceLocator.sounds_service.play(ServiceLocator.config.get("audio")["sounds"]["player_die"])
+
+        for _, (_, velocity, player, renderable) in self.world.get_components(Transform, Velocity, Player, Renderable):
+            velocity.value = pygame.Vector2(0, 0)
+            renderable.visible = False
+
+    def _finish_player_respawn(self) -> None:
+        if self.player_death_outcome == "game_over":
             self.engine.shared_state["game_over_reason"] = "No lives left"
             self.switch_to("game_over")
             return
@@ -163,6 +185,17 @@ class PlayScene(Scene):
     def update(self, dt: float) -> None:
         if self.state == GameState.PAUSED:
             return
+        if self.player_dying:
+            self.player_respawn_timer -= dt
+            self.movement_system.update(self.world, dt)
+            self.velocity_system.update(self.world, dt)
+            self.particle_system.update(self.world, dt)
+            self.animation_system.update(self.world, dt)
+            self.lifetime_system.update(self.world, dt)
+            self.audio_system.update(self.world, dt)
+            if self.player_respawn_timer <= 0.0:
+                self._finish_player_respawn()
+            return
         self.shooting_system.update(dt)
         self.enemy_spawn_system.update(self.world, dt)
         self.lander_ai_system.update(self.world, dt)
@@ -174,7 +207,7 @@ class PlayScene(Scene):
         self.velocity_system.update(self.world, dt)
         self.projectile_system.update(self.world, dt)
         self.wraparound_system.update(self.world, dt)
-        self.collision_system.update(self.world, dt, self._on_player_enemy_collision)
+        self.collision_system.update(self.world, dt, self.camera, self._on_player_enemy_collision)
         self.particle_system.update(self.world, dt)
         self.animation_system.update(self.world, dt)
         self.planet_system.update(self.world, dt)
