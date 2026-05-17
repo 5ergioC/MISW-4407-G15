@@ -93,6 +93,20 @@ class PlayScene(Scene):
         create_input_commands(self.world)
         create_audio_event(self.world, "snd/game_start.ogg")
 
+    def _reset_run_after_player_death(self) -> None:
+        self.world.clear_database()
+        self.enemy_spawn_system.reset()
+        self._create_world()
+
+    def _on_player_enemy_collision(self) -> None:
+        lives = max(0, int(self.engine.shared_state["lives"]) - 1)
+        self.engine.shared_state["lives"] = lives
+        if lives <= 0:
+            self.engine.shared_state["game_over_reason"] = "No lives left"
+            self.switch_to("game_over")
+            return
+        self._reset_run_after_player_death()
+
     def _toggle_pause(self) -> None:
         if self.state == GameState.PLAYING:
             self.state = GameState.PAUSED
@@ -160,7 +174,7 @@ class PlayScene(Scene):
         self.velocity_system.update(self.world, dt)
         self.projectile_system.update(self.world, dt)
         self.wraparound_system.update(self.world, dt)
-        self.collision_system.update(self.world, dt)
+        self.collision_system.update(self.world, dt, self._on_player_enemy_collision)
         self.particle_system.update(self.world, dt)
         self.animation_system.update(self.world, dt)
         self.planet_system.update(self.world, dt)
