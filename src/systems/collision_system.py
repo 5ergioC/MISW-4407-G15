@@ -20,6 +20,7 @@ class CollisionSystem:
         players = list(world.get_components(Transform, Collider, Player, Renderable))
         projectiles = list(world.get_components(Transform, Collider, Projectile, Renderable))
         enemies = list(world.get_components(Transform, Collider, Renderable, Tag))
+        enemy_projectiles = list(world.get_components(Transform, Collider, Projectile, Renderable))
         if enemies and projectiles:
             enemies_to_delete: set[int] = set()
             enemy_death_sound = ServiceLocator.config.get("audio")["sounds"].get("enemy_die")
@@ -42,6 +43,24 @@ class CollisionSystem:
 
             for enemy_entity in enemies_to_delete:
                 world.delete_entity(enemy_entity, immediate=True)
+
+        if players and enemy_projectiles:
+            enemy_projectiles_to_delete: set[int] = set()
+            for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in enemy_projectiles:
+                if projectile_component.owner != "enemy":
+                    continue
+                projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
+                for player_entity, (player_transform, player_collider, player_component, player_renderable) in players:
+                    player_rect = self._build_rect(player_transform, player_collider, player_renderable)
+                    if not projectile_rect.colliderect(player_rect):
+                        continue
+                    enemy_projectiles_to_delete.add(projectile_entity)
+                    del player_entity
+                    if on_player_enemy_collision is not None:
+                        on_player_enemy_collision(player_transform.position.copy())
+                    for projectile_entity in enemy_projectiles_to_delete:
+                        world.delete_entity(projectile_entity, immediate=True)
+                    return
 
         if not players or not enemies:
             return
