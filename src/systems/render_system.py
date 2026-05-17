@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pygame
 
+from src.components.animation import Animation
 from src.components.camera import Camera
 from src.components.laser import Laser
 from src.components.parallax import Parallax
@@ -48,6 +49,29 @@ class RenderSystem:
                 pygame.draw.polygon(surface, renderable.color, points)
             elif renderable.shape == "image":
                 image = ServiceLocator.images_service.get(renderable.image_path)
+                if world.has_component(entity, Animation):
+                    animation = world.component_for_entity(entity, Animation)
+                    frame_count = max(1, animation.frame_count)
+                    frame_index = animation.frame_index % frame_count
+
+                    if frame_count > 1:
+                        if image.get_width() >= image.get_height():
+                            frame_width = max(1, image.get_width() // frame_count)
+                            source_rect = pygame.Rect(frame_index * frame_width, 0, frame_width, image.get_height())
+                        else:
+                            frame_height = max(1, image.get_height() // frame_count)
+                            source_rect = pygame.Rect(0, frame_index * frame_height, image.get_width(), frame_height)
+
+                        try:
+                            frame_image = image.subsurface(source_rect).copy()
+                            if frame_image.get_bounding_rect().width > 0 and frame_image.get_bounding_rect().height > 0:
+                                image = frame_image
+                        except ValueError:
+                            pass
+
+                    target_size = (max(1, round(renderable.size.x)), max(1, round(renderable.size.y)))
+                    if image.get_size() != target_size:
+                        image = pygame.transform.smoothscale(image, target_size)
                 if renderable.flip_x:
                     image = pygame.transform.flip(image, True, False)
                 rect = image.get_rect()

@@ -5,8 +5,12 @@ import random
 import pygame
 
 from src.components.audio_event import AudioEvent
+from src.components.animation import Animation
+from src.components.astronaut import Astronaut
 from src.components.collider import Collider
 from src.components.camera import CameraTarget
+from src.components.enemy import Enemy
+from src.components.health import Health
 from src.components.input_command import InputCommand
 from src.components.laser import Laser
 from src.components.lifetime import Lifetime
@@ -15,6 +19,9 @@ from src.components.planet import Planet
 from src.components.player import Player
 from src.components.projectile import Projectile
 from src.components.renderable import Renderable
+from src.components.score_value import ScoreValue
+from src.components.state import State
+from src.components.tag import Tag
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.components.wraparound import Wraparound
@@ -204,3 +211,145 @@ def create_input_commands(world) -> None:
     for key, name in input_map.items():
         entity = world.create_entity()
         world.add_component(entity, InputCommand(name=name, key=key))
+
+
+def create_lander(world, speed_multiplier: float = 1.0) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    world_cfg = ServiceLocator.config.get("world")
+    lander_cfg = enemies_cfg["lander"]
+    size = lander_cfg["size"]
+    lander_sheet = ServiceLocator.images_service.get("img/enemy_lander.png")
+    lander_frame_w = max(1, lander_sheet.get_width() // 5)
+    lander_frame_h = max(1, lander_sheet.get_height())
+    render_size = pygame.Vector2(lander_frame_w, lander_frame_h)
+    speed = float(lander_cfg["speed"]) * max(0.1, speed_multiplier)
+    direction = random.choice((-1.0, 1.0))
+
+    spawn_x = random.uniform(0, world_cfg["width"])
+    spawn_y = random.uniform(56, max(58, world_cfg["height"] - world_cfg["planet_height"] - 26))
+
+    entity = world.create_entity()
+    world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
+    world.add_component(entity, Velocity(pygame.Vector2(direction * speed, 0)))
+    world.add_component(
+        entity,
+        Renderable(
+            shape="image",
+            size=render_size,
+            color=pygame.Color(255, 255, 255),
+            layer=9,
+            image_path="img/enemy_lander.png",
+            centered=True,
+        ),
+    )
+    world.add_component(entity, Collider(pygame.Vector2(size["w"], size["h"]), pygame.Vector2()))
+    world.add_component(entity, Animation(frame_count=5, frame_time=0.09, loop=True))
+    world.add_component(entity, Enemy(kind="lander", state="patrol"))
+    world.add_component(entity, State(name="patrol"))
+    world.add_component(entity, Health(current=1, maximum=1))
+    world.add_component(entity, ScoreValue(amount=int(lander_cfg["score"])))
+    world.add_component(entity, Tag("enemy", "enemy_lander", "lander"))
+    world.add_component(
+        entity,
+        Wraparound(
+            world_width=world_cfg["width"],
+            world_height=world_cfg["height"],
+            margin=16,
+            horizontal=True,
+            vertical=True,
+        ),
+    )
+    return entity
+
+
+def create_mutant(world, speed_multiplier: float = 1.0) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    world_cfg = ServiceLocator.config.get("world")
+    mutant_cfg = enemies_cfg["mutant"]
+    size = mutant_cfg["size"]
+    mutant_sheet = ServiceLocator.images_service.get("img/enemy_mutant.png")
+    mutant_frame_w = max(1, mutant_sheet.get_width() // 5)
+    mutant_frame_h = max(1, mutant_sheet.get_height())
+    render_size = pygame.Vector2(mutant_frame_w, mutant_frame_h)
+    speed = float(mutant_cfg["speed"]) * max(0.1, speed_multiplier)
+    direction_x = random.choice((-1.0, 1.0))
+    direction_y = random.choice((-1.0, 1.0))
+
+    spawn_x = random.uniform(0, world_cfg["width"])
+    spawn_y = random.uniform(48, max(50, world_cfg["height"] - world_cfg["planet_height"] - 32))
+
+    entity = world.create_entity()
+    world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
+    world.add_component(entity, Velocity(pygame.Vector2(direction_x * speed, direction_y * speed * 0.35)))
+    world.add_component(
+        entity,
+        Renderable(
+            shape="image",
+            size=render_size,
+            color=pygame.Color(255, 255, 255),
+            layer=9,
+            image_path="img/enemy_mutant.png",
+            centered=True,
+        ),
+    )
+    world.add_component(entity, Collider(pygame.Vector2(size["w"], size["h"]), pygame.Vector2()))
+    world.add_component(entity, Animation(frame_count=5, frame_time=0.08, loop=True))
+    world.add_component(entity, Enemy(kind="mutant", state="chase"))
+    world.add_component(entity, State(name="chase"))
+    world.add_component(entity, Health(current=1, maximum=1))
+    world.add_component(entity, ScoreValue(amount=int(mutant_cfg["score"])))
+    world.add_component(entity, Tag("enemy", "enemy_mutant", "mutant"))
+    world.add_component(
+        entity,
+        Wraparound(
+            world_width=world_cfg["width"],
+            world_height=world_cfg["height"],
+            margin=16,
+            horizontal=True,
+            vertical=True,
+        ),
+    )
+    return entity
+
+
+def create_astronaut(world) -> int:
+    world_cfg = ServiceLocator.config.get("world")
+    astronaut_cfg = world_cfg.get("astronauts", {})
+    ground_offset = int(astronaut_cfg.get("ground_offset", 6))
+    astronaut_sheet = ServiceLocator.images_service.get("img/astronaut.png")
+    astronaut_frame_w = max(1, astronaut_sheet.get_width() // 3)
+    astronaut_frame_h = max(1, astronaut_sheet.get_height())
+    render_size = pygame.Vector2(astronaut_frame_w, astronaut_frame_h)
+
+    spawn_x = random.uniform(0, world_cfg["width"])
+    spawn_y = world_cfg["height"] - world_cfg["planet_height"] - ground_offset
+
+    entity = world.create_entity()
+    world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
+    world.add_component(entity, Velocity(pygame.Vector2(0, 0)))
+    world.add_component(
+        entity,
+        Renderable(
+            shape="image",
+            size=render_size,
+            color=pygame.Color(255, 255, 255),
+            layer=8,
+            image_path="img/astronaut.png",
+            centered=True,
+        ),
+    )
+    world.add_component(entity, Collider(render_size, pygame.Vector2()))
+    world.add_component(entity, Animation(frame_count=3, frame_time=0.12, loop=True))
+    world.add_component(entity, Astronaut(state="walking"))
+    world.add_component(entity, State(name="walking"))
+    world.add_component(entity, Tag("astronaut", "friendly", "rescuable"))
+    world.add_component(
+        entity,
+        Wraparound(
+            world_width=world_cfg["width"],
+            margin=12,
+            horizontal=True,
+            vertical=False,
+        ),
+    )
+    return entity
