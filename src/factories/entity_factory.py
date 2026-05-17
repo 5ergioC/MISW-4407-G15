@@ -18,6 +18,7 @@ from src.components.parallax import Parallax
 from src.components.planet import Planet
 from src.components.player import Player
 from src.components.projectile import Projectile
+from src.components.particle import Particle
 from src.components.renderable import Renderable
 from src.components.score_value import ScoreValue
 from src.components.state import State
@@ -148,6 +149,69 @@ def create_planet(world) -> int:
 
 def create_audio_event(world, sound_path: str) -> int:
     return world.create_entity(AudioEvent(sound_path))
+
+
+def create_enemy_death_fx(world, position: pygame.Vector2) -> None:
+    fragment_palette = [
+        pygame.Color(255, 120, 45),
+        pygame.Color(255, 165, 65),
+        pygame.Color(255, 205, 90),
+        pygame.Color(255, 95, 35),
+    ]
+    for index in range(6):
+        angle = index * 60 + random.uniform(-12, 12)
+        direction = pygame.Vector2(1, 0).rotate(angle)
+        speed = random.uniform(40.0, 120.0)
+        fragment = world.create_entity()
+        offset = direction * random.uniform(0.0, 5.0)
+        size = pygame.Vector2(random.uniform(2.0, 4.0), random.uniform(2.0, 4.0))
+        world.add_component(fragment, Transform(position.copy() + offset - size / 2))
+        world.add_component(fragment, Velocity(direction * speed))
+        world.add_component(
+            fragment,
+            Renderable(
+                shape="rect",
+                size=size,
+                color=random.choice(fragment_palette),
+                layer=11,
+                centered=True,
+            ),
+        )
+        world.add_component(fragment, Particle(kind="enemy_death_fragment"))
+        world.add_component(fragment, Lifetime(random.uniform(0.12, 0.28)))
+
+    return None
+
+
+def create_player_death_fx(world, position: pygame.Vector2) -> None:
+    fragment_palette = [
+        pygame.Color(120, 255, 240),
+        pygame.Color(90, 220, 255),
+        pygame.Color(170, 240, 255),
+        pygame.Color(255, 255, 255),
+    ]
+    for index in range(7):
+        angle = index * (360 / 7) + random.uniform(-10, 10)
+        direction = pygame.Vector2(1, 0).rotate(angle)
+        speed = random.uniform(55.0, 140.0)
+        fragment = world.create_entity()
+        offset = direction * random.uniform(0.0, 6.0)
+        size = pygame.Vector2(random.uniform(2.5, 5.0), random.uniform(2.5, 5.0))
+        world.add_component(fragment, Transform(position.copy() + offset - size / 2))
+        world.add_component(fragment, Velocity(direction * speed))
+        world.add_component(
+            fragment,
+            Renderable(
+                shape="rect",
+                size=size,
+                color=random.choice(fragment_palette),
+                layer=12,
+                centered=True,
+            ),
+        )
+        world.add_component(fragment, Particle(kind="player_death_fragment"))
+        world.add_component(fragment, Lifetime(random.uniform(0.14, 0.34)))
+
 
 
 def _generate_planet_points(
