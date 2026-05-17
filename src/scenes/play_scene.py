@@ -14,7 +14,7 @@ from src.factories.entity_factory import (
     create_player,
     create_starfield,
 )
-from src.components.enemy import Enemy
+from src.components.tag import Tag
 from src.systems.abduction_system import AbductionSystem
 from src.systems.animation_system import AnimationSystem
 from src.systems.astronaut_system import AstronautSystem
@@ -178,7 +178,10 @@ class PlayScene(Scene):
         
         for _, (_, _, player) in self.world.get_components(Transform, Velocity, Player):
             player.is_shooting = False
-        enemy_count = len(self.world.get_components(Enemy))
+        enemy_count = 0
+        for _, (tag,) in self.world.get_components(Tag):
+            if tag.has("enemy"):
+                enemy_count += 1
         self.hud_system.render(
             surface,
             self.engine.shared_state,
