@@ -242,7 +242,7 @@ def create_lander(world, speed_multiplier: float = 1.0) -> int:
             centered=True,
         ),
     )
-    world.add_component(entity, Collider(pygame.Vector2(size["w"], size["h"]), pygame.Vector2()))
+    world.add_component(entity, Collider(render_size, pygame.Vector2()))
     world.add_component(entity, Animation(frame_count=5, frame_time=0.09, loop=True))
     world.add_component(entity, Enemy(kind="lander", state="patrol"))
     world.add_component(entity, State(name="patrol"))

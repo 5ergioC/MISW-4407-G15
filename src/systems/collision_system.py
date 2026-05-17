@@ -4,6 +4,7 @@ import pygame
 
 from src.components.collider import Collider
 from src.components.player import Player
+from src.components.projectile import Projectile
 from src.components.renderable import Renderable
 from src.components.tag import Tag
 from src.components.transform import Transform
@@ -14,7 +15,25 @@ class CollisionSystem:
         del dt
 
         players = list(world.get_components(Transform, Collider, Player, Renderable))
+        projectiles = list(world.get_components(Transform, Collider, Projectile, Renderable))
         enemies = list(world.get_components(Transform, Collider, Renderable, Tag))
+        if enemies and projectiles:
+            enemies_to_delete: set[int] = set()
+            for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in projectiles:
+                if projectile_component.owner != "player":
+                    continue
+                projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
+                for enemy_entity, (enemy_transform, enemy_collider, enemy_renderable, enemy_tag) in enemies:
+                    if enemy_entity in enemies_to_delete or not enemy_tag.has("enemy"):
+                        continue
+                    enemy_rect = self._build_rect(enemy_transform, enemy_collider, enemy_renderable)
+                    if not projectile_rect.colliderect(enemy_rect):
+                        continue
+                    enemies_to_delete.add(enemy_entity)
+
+            for enemy_entity in enemies_to_delete:
+                world.delete_entity(enemy_entity, immediate=True)
+
         if not players or not enemies:
             return
 
