@@ -33,6 +33,7 @@ class HUDSystem:
         camera: Camera | None = None,
         planet_points: list[tuple[float, float]] | None = None,
         enemy_count: int = 0,
+        enemy_fire_disabled: bool = False,
     ) -> None:
         self._render_scanner(surface, camera, planet_points or [])
         font_path = self.interface_cfg["font"]["path"]
@@ -51,6 +52,13 @@ class HUDSystem:
             )
             rect = paused_text.get_rect(center=(160, 118))
             surface.blit(paused_text, rect)
+
+
+        if enemy_fire_disabled:
+            if (pygame.time.get_ticks() // 400) % 2 == 0:
+                disabled_text = ServiceLocator.texts_service.render(font_path, 8, "ENEMY FIRE OFF", (220, 60, 60))
+                drect = disabled_text.get_rect(center=(160, 12))
+                surface.blit(disabled_text, drect)
 
     def _render_lives(self, surface: pygame.Surface, lives: int) -> None:
         icon = self.lives_icon

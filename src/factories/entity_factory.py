@@ -95,6 +95,37 @@ def create_laser(world, position: pygame.Vector2, direction: float, owner_veloci
     return entity
 
 
+def create_enemy_bullet(world, position: pygame.Vector2, direction: pygame.Vector2, speed: float, owner_velocity: pygame.Vector2 | None = None) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    bullet_cfg = enemies_cfg["bullet"]
+    sheet = ServiceLocator.images_service.get("img/enemy_bullet.png")
+    bullet_size = pygame.Vector2(max(1, sheet.get_width()), max(1, sheet.get_height()))
+    travel_direction = direction.normalize() if direction.length_squared() > 0 else pygame.Vector2(1, 0)
+    velocity = travel_direction * speed
+    if owner_velocity is not None:
+        velocity += owner_velocity * 0.25
+
+    entity = world.create_entity()
+    world.add_component(entity, Transform(position.copy()))
+    world.add_component(entity, Velocity(velocity))
+    world.add_component(
+        entity,
+        Renderable(
+            shape="image",
+            size=bullet_size,
+            color=pygame.Color(255, 255, 255),
+            layer=8,
+            image_path="img/enemy_bullet.png",
+            centered=True,
+        ),
+    )
+    world.add_component(entity, Collider(bullet_size, pygame.Vector2()))
+    world.add_component(entity, Projectile(owner="enemy", direction=travel_direction, speed=speed, damage=1))
+    world.add_component(entity, Lifetime(float(bullet_cfg["lifetime"])))
+    world.add_component(entity, Tag("enemy_projectile"))
+    return entity
+
+
 def create_starfield(world) -> list[int]:
     world_cfg = ServiceLocator.config.get("world")
     entities: list[int] = []
@@ -329,6 +360,7 @@ def create_input_commands(world) -> None:
         pygame.K_o: "PLAYER_LOSE_LIFE",
         pygame.K_v: "PLAYER_WIN",
         pygame.K_ESCAPE: "PLAYER_MENU",
+        pygame.K_h: "TOGGLE_ENEMY_FIRE",
     }
     
     for key, name in input_map.items():

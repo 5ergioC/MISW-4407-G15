@@ -24,6 +24,7 @@ from src.systems.background_system import BackgroundSystem
 from src.systems.camera_system import CameraSystem
 from src.systems.collision_system import CollisionSystem
 from src.systems.enemy_spawn_system import EnemySpawnSystem
+from src.systems.enemy_fire_system import EnemyFireSystem
 from src.systems.gravity_system import GravitySystem
 from src.systems.hud_system import HUDSystem
 from src.systems.input_command_system import system_input_command
@@ -71,6 +72,7 @@ class PlayScene(Scene):
         self.audio_system = AudioSystem()
         self.camera_system = CameraSystem(self.camera)
         self.enemy_spawn_system = EnemySpawnSystem()
+        self.enemy_fire_system = EnemyFireSystem()
         self.lander_ai_system = LanderAISystem()
         self.mutant_ai_system = MutantAISystem()
         self.abduction_system = AbductionSystem()
@@ -91,6 +93,8 @@ class PlayScene(Scene):
         self.player_dying = False
         self.player_death_outcome: str | None = None
         self._create_world()
+        # runtime flags
+        self.enemy_fire_disabled = not self.enemy_fire_system.enabled
 
     def _create_world(self) -> None:
         create_starfield(self.world)
@@ -159,6 +163,12 @@ class PlayScene(Scene):
             if c_input.phase == CommandPhase.START:
                 self._toggle_pause()
 
+        elif c_input.name == "TOGGLE_ENEMY_FIRE":
+            from src.components.input_command import CommandPhase
+            if c_input.phase == CommandPhase.START:
+                self.enemy_fire_system.enabled = not getattr(self.enemy_fire_system, "enabled", True)
+                self.enemy_fire_disabled = not self.enemy_fire_system.enabled
+
         elif c_input.name == "PLAYER_LOSE_LIFE":
             from src.components.input_command import CommandPhase
             if c_input.phase == CommandPhase.START:
@@ -200,6 +210,7 @@ class PlayScene(Scene):
         self.enemy_spawn_system.update(self.world, dt)
         self.lander_ai_system.update(self.world, dt)
         self.mutant_ai_system.update(self.world, dt)
+        self.enemy_fire_system.update(self.world, dt, self.camera)
         self.abduction_system.update(self.world, dt)
         self.astronaut_system.update(self.world, dt)
         self.gravity_system.update(self.world, dt)
@@ -236,4 +247,5 @@ class PlayScene(Scene):
             self.camera,
             self.planet_system.points,
             enemy_count,
+            self.enemy_fire_disabled,
         )
