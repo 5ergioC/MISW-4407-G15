@@ -4,7 +4,25 @@ import random
 
 from src.components.tag import Tag
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_astronaut, create_lander, create_mutant
+from src.factories.entity_factory import (
+    create_astronaut,
+    create_baiter,
+    create_bomber,
+    create_lander,
+    create_mutant,
+    create_pod,
+    create_swarmer,
+)
+
+
+SPAWN_TYPES = (
+    ("landers", "initial_landers", create_lander, "lander_speed_multiplier"),
+    ("mutants", "initial_mutants", create_mutant, "mutant_speed_multiplier"),
+    ("bombers", "initial_bombers", create_bomber, "bomber_speed_multiplier"),
+    ("baiters", "initial_baiters", create_baiter, "baiter_speed_multiplier"),
+    ("swarmers", "initial_swarmers", create_swarmer, "swarmer_speed_multiplier"),
+    ("pods", "initial_pods", create_pod, "pod_speed_multiplier"),
+)
 
 
 class EnemySpawnSystem:
@@ -16,8 +34,7 @@ class EnemySpawnSystem:
 
         self.wave_index = 0
         self.wave_started = False
-        self.remaining_landers = 0
-        self.remaining_mutants = 0
+        self.remaining_counts: dict[str, int] = {count_key: 0 for count_key, *_ in SPAWN_TYPES}
         self.spawn_timer = 0.0
         self.rng = random.Random()
 
@@ -36,7 +53,7 @@ class EnemySpawnSystem:
 
         self.spawn_timer -= dt
         spawn_interval = max(0.1, float(wave.get("spawn_interval", 2.0)))
-        while self.spawn_timer <= 0.0 and (self.remaining_landers > 0 or self.remaining_mutants > 0):
+        while self.spawn_timer <= 0.0 and any(count > 0 for count in self.remaining_counts.values()):
             self._spawn_enemy(world, wave)
             self.spawn_timer += spawn_interval
 
@@ -47,16 +64,13 @@ class EnemySpawnSystem:
     def reset(self) -> None:
         self.wave_index = 0
         self.wave_started = False
-        self.remaining_landers = 0
-        self.remaining_mutants = 0
+        self.remaining_counts = {count_key: 0 for count_key, *_ in SPAWN_TYPES}
         self.spawn_timer = 0.0
 
     def _start_wave(self, world, wave: dict) -> None:
-        initial_landers = int(self.enemies_cfg.get("initial_landers", 0)) if self.wave_index == 0 else 0
-        initial_mutants = int(self.enemies_cfg.get("initial_mutants", 0)) if self.wave_index == 0 else 0
-
-        self.remaining_landers = int(wave.get("landers", 0)) + initial_landers
-        self.remaining_mutants = int(wave.get("mutants", 0)) + initial_mutants
+        for count_key, initial_key, _, _ in SPAWN_TYPES:
+            initial_count = int(self.enemies_cfg.get(initial_key, 0)) if self.wave_index == 0 else 0
+            self.remaining_counts[count_key] = max(0, int(wave.get(count_key, 0)) + initial_count)
         self.spawn_timer = 0.0
         self.wave_started = True
 
@@ -66,26 +80,30 @@ class EnemySpawnSystem:
             create_astronaut(world)
 
     def _spawn_enemy(self, world, wave: dict) -> None:
-        can_spawn_lander = self.remaining_landers > 0
-        can_spawn_mutant = self.remaining_mutants > 0
-        if not can_spawn_lander and not can_spawn_mutant:
+        available_types = [(count_key, spawn_fn, speed_multiplier_key) for count_key, _, spawn_fn, speed_multiplier_key in SPAWN_TYPES if self.remaining_counts[count_key] > 0]
+        if not available_types:
             return
 
-        if can_spawn_lander and can_spawn_mutant:
-            total = self.remaining_landers + self.remaining_mutants
-            spawn_lander = self.rng.random() < (self.remaining_landers / total)
-        else:
-            spawn_lander = can_spawn_lander
+        total = sum(self.remaining_counts[count_key] for count_key, _, _ in available_types)
+        roll = self.rng.uniform(0, total)
+        accumulator = 0.0
+        selected_count_key = available_types[-1][0]
+        selected_spawn_fn = available_types[-1][1]
+        selected_speed_key = available_types[-1][2]
 
-        if spawn_lander:
-            create_lander(world, speed_multiplier=float(wave.get("lander_speed_multiplier", 1.0)))
-            self.remaining_landers -= 1
-        else:
-            create_mutant(world, speed_multiplier=float(wave.get("mutant_speed_multiplier", 1.0)))
-            self.remaining_mutants -= 1
+        for count_key, spawn_fn, speed_multiplier_key in available_types:
+            accumulator += self.remaining_counts[count_key]
+            if roll <= accumulator:
+                selected_count_key = count_key
+                selected_spawn_fn = spawn_fn
+                selected_speed_key = speed_multiplier_key
+                break
+
+        selected_spawn_fn(world, speed_multiplier=float(wave.get(selected_speed_key, 1.0)))
+        self.remaining_counts[selected_count_key] -= 1
 
     def _can_advance_wave(self, world) -> bool:
-        if self.remaining_landers > 0 or self.remaining_mutants > 0:
+        if any(count > 0 for count in self.remaining_counts.values()):
             return False
         return self._count_by_tag(world, "enemy") == 0
 

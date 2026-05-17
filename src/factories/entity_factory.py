@@ -151,6 +151,65 @@ def create_audio_event(world, sound_path: str) -> int:
     return world.create_entity(AudioEvent(sound_path))
 
 
+def _create_enemy_entity(
+    world,
+    *,
+    kind: str,
+    state: str,
+    image_path: str,
+    frame_count: int,
+    layer: int,
+    score: int,
+    spawn_y_min: float,
+    spawn_y_max: float,
+    speed_x: float,
+    speed_y: float,
+    tag_labels: tuple[str, ...],
+    frame_time: float,
+    wrap_margin: int = 16,
+) -> int:
+    world_cfg = ServiceLocator.config.get("world")
+    sheet = ServiceLocator.images_service.get(image_path)
+    frame_width = max(1, sheet.get_width() // max(1, frame_count))
+    frame_height = max(1, sheet.get_height())
+    render_size = pygame.Vector2(frame_width, frame_height)
+    spawn_x = random.uniform(0, world_cfg["width"])
+    spawn_y = random.uniform(spawn_y_min, spawn_y_max)
+
+    entity = world.create_entity()
+    world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
+    world.add_component(entity, Velocity(pygame.Vector2(speed_x, speed_y)))
+    world.add_component(
+        entity,
+        Renderable(
+            shape="image",
+            size=render_size,
+            color=pygame.Color(255, 255, 255),
+            layer=layer,
+            image_path=image_path,
+            centered=True,
+        ),
+    )
+    world.add_component(entity, Collider(render_size, pygame.Vector2()))
+    world.add_component(entity, Animation(frame_count=frame_count, frame_time=frame_time, loop=True))
+    world.add_component(entity, Enemy(kind=kind, state=state))
+    world.add_component(entity, State(name=state))
+    world.add_component(entity, Health(current=1, maximum=1))
+    world.add_component(entity, ScoreValue(amount=score))
+    world.add_component(entity, Tag("enemy", *tag_labels))
+    world.add_component(
+        entity,
+        Wraparound(
+            world_width=world_cfg["width"],
+            world_height=world_cfg["height"],
+            margin=wrap_margin,
+            horizontal=True,
+            vertical=True,
+        ),
+    )
+    return entity
+
+
 def create_enemy_death_fx(world, position: pygame.Vector2) -> None:
     fragment_palette = [
         pygame.Color(255, 120, 45),
@@ -279,101 +338,139 @@ def create_input_commands(world) -> None:
 
 def create_lander(world, speed_multiplier: float = 1.0) -> int:
     enemies_cfg = ServiceLocator.config.get("enemies")
-    world_cfg = ServiceLocator.config.get("world")
     lander_cfg = enemies_cfg["lander"]
-    size = lander_cfg["size"]
-    lander_sheet = ServiceLocator.images_service.get("img/enemy_lander.png")
-    lander_frame_w = max(1, lander_sheet.get_width() // 5)
-    lander_frame_h = max(1, lander_sheet.get_height())
-    render_size = pygame.Vector2(lander_frame_w, lander_frame_h)
     speed = float(lander_cfg["speed"]) * max(0.1, speed_multiplier)
     direction = random.choice((-1.0, 1.0))
-
-    spawn_x = random.uniform(0, world_cfg["width"])
-    spawn_y = random.uniform(56, max(58, world_cfg["height"] - world_cfg["planet_height"] - 26))
-
-    entity = world.create_entity()
-    world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
-    world.add_component(entity, Velocity(pygame.Vector2(direction * speed, 0)))
-    world.add_component(
-        entity,
-        Renderable(
-            shape="image",
-            size=render_size,
-            color=pygame.Color(255, 255, 255),
-            layer=9,
-            image_path="img/enemy_lander.png",
-            centered=True,
-        ),
+    world_cfg = ServiceLocator.config.get("world")
+    return _create_enemy_entity(
+        world,
+        kind="lander",
+        state="patrol",
+        image_path="img/enemy_lander.png",
+        frame_count=5,
+        layer=9,
+        score=int(lander_cfg["score"]),
+        spawn_y_min=56,
+        spawn_y_max=max(58, world_cfg["height"] - world_cfg["planet_height"] - 26),
+        speed_x=direction * speed,
+        speed_y=0.0,
+        tag_labels=("enemy_lander", "lander"),
+        frame_time=0.09,
     )
-    world.add_component(entity, Collider(render_size, pygame.Vector2()))
-    world.add_component(entity, Animation(frame_count=5, frame_time=0.09, loop=True))
-    world.add_component(entity, Enemy(kind="lander", state="patrol"))
-    world.add_component(entity, State(name="patrol"))
-    world.add_component(entity, Health(current=1, maximum=1))
-    world.add_component(entity, ScoreValue(amount=int(lander_cfg["score"])))
-    world.add_component(entity, Tag("enemy", "enemy_lander", "lander"))
-    world.add_component(
-        entity,
-        Wraparound(
-            world_width=world_cfg["width"],
-            world_height=world_cfg["height"],
-            margin=16,
-            horizontal=True,
-            vertical=True,
-        ),
-    )
-    return entity
 
 
 def create_mutant(world, speed_multiplier: float = 1.0) -> int:
     enemies_cfg = ServiceLocator.config.get("enemies")
-    world_cfg = ServiceLocator.config.get("world")
     mutant_cfg = enemies_cfg["mutant"]
-    size = mutant_cfg["size"]
-    mutant_sheet = ServiceLocator.images_service.get("img/enemy_mutant.png")
-    mutant_frame_w = max(1, mutant_sheet.get_width() // 5)
-    mutant_frame_h = max(1, mutant_sheet.get_height())
-    render_size = pygame.Vector2(mutant_frame_w, mutant_frame_h)
     speed = float(mutant_cfg["speed"]) * max(0.1, speed_multiplier)
     direction_x = random.choice((-1.0, 1.0))
     direction_y = random.choice((-1.0, 1.0))
-
-    spawn_x = random.uniform(0, world_cfg["width"])
-    spawn_y = random.uniform(48, max(50, world_cfg["height"] - world_cfg["planet_height"] - 32))
-
-    entity = world.create_entity()
-    world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
-    world.add_component(entity, Velocity(pygame.Vector2(direction_x * speed, direction_y * speed * 0.35)))
-    world.add_component(
-        entity,
-        Renderable(
-            shape="image",
-            size=render_size,
-            color=pygame.Color(255, 255, 255),
-            layer=9,
-            image_path="img/enemy_mutant.png",
-            centered=True,
-        ),
+    world_cfg = ServiceLocator.config.get("world")
+    return _create_enemy_entity(
+        world,
+        kind="mutant",
+        state="chase",
+        image_path="img/enemy_mutant.png",
+        frame_count=5,
+        layer=9,
+        score=int(mutant_cfg["score"]),
+        spawn_y_min=48,
+        spawn_y_max=max(50, world_cfg["height"] - world_cfg["planet_height"] - 32),
+        speed_x=direction_x * speed,
+        speed_y=direction_y * speed * 0.35,
+        tag_labels=("enemy_mutant", "mutant"),
+        frame_time=0.08,
     )
-    world.add_component(entity, Collider(pygame.Vector2(size["w"], size["h"]), pygame.Vector2()))
-    world.add_component(entity, Animation(frame_count=5, frame_time=0.08, loop=True))
-    world.add_component(entity, Enemy(kind="mutant", state="chase"))
-    world.add_component(entity, State(name="chase"))
-    world.add_component(entity, Health(current=1, maximum=1))
-    world.add_component(entity, ScoreValue(amount=int(mutant_cfg["score"])))
-    world.add_component(entity, Tag("enemy", "enemy_mutant", "mutant"))
-    world.add_component(
-        entity,
-        Wraparound(
-            world_width=world_cfg["width"],
-            world_height=world_cfg["height"],
-            margin=16,
-            horizontal=True,
-            vertical=True,
-        ),
+
+
+def create_bomber(world, speed_multiplier: float = 1.0) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    bomber_cfg = enemies_cfg["bomber"]
+    speed = float(bomber_cfg["speed"]) * max(0.1, speed_multiplier)
+    direction_x = random.choice((-1.0, 1.0))
+    return _create_enemy_entity(
+        world,
+        kind="bomber",
+        state="bombing",
+        image_path="img/enemy_bomber.png",
+        frame_count=5,
+        layer=9,
+        score=int(bomber_cfg["score"]),
+        spawn_y_min=42,
+        spawn_y_max=140,
+        speed_x=direction_x * speed,
+        speed_y=speed * 0.24,
+        tag_labels=("enemy_bomber", "bomber"),
+        frame_time=0.08,
     )
-    return entity
+
+
+def create_baiter(world, speed_multiplier: float = 1.0) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    baiter_cfg = enemies_cfg["baiter"]
+    speed = float(baiter_cfg["speed"]) * max(0.1, speed_multiplier)
+    direction_x = random.choice((-1.0, 1.0))
+    direction_y = random.choice((-1.0, 1.0))
+    return _create_enemy_entity(
+        world,
+        kind="baiter",
+        state="chasing",
+        image_path="img/enemy_baiter.png",
+        frame_count=5,
+        layer=9,
+        score=int(baiter_cfg["score"]),
+        spawn_y_min=44,
+        spawn_y_max=156,
+        speed_x=direction_x * speed,
+        speed_y=direction_y * speed * 0.18,
+        tag_labels=("enemy_baiter", "baiter"),
+        frame_time=0.07,
+    )
+
+
+def create_swarmer(world, speed_multiplier: float = 1.0) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    swarmer_cfg = enemies_cfg["swarmer"]
+    speed = float(swarmer_cfg["speed"]) * max(0.1, speed_multiplier)
+    direction_x = random.choice((-1.0, 1.0))
+    direction_y = random.choice((-1.0, 1.0))
+    return _create_enemy_entity(
+        world,
+        kind="swarmer",
+        state="swarming",
+        image_path="img/enemy_swarmer.png",
+        frame_count=1,
+        layer=9,
+        score=int(swarmer_cfg["score"]),
+        spawn_y_min=36,
+        spawn_y_max=180,
+        speed_x=direction_x * speed,
+        speed_y=direction_y * speed * 0.14,
+        tag_labels=("enemy_swarmer", "swarmer"),
+        frame_time=0.1,
+    )
+
+
+def create_pod(world, speed_multiplier: float = 1.0) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    pod_cfg = enemies_cfg["pod"]
+    speed = float(pod_cfg["speed"]) * max(0.1, speed_multiplier)
+    direction_x = random.choice((-1.0, 1.0))
+    return _create_enemy_entity(
+        world,
+        kind="pod",
+        state="drifting",
+        image_path="img/enemy_pod.png",
+        frame_count=1,
+        layer=9,
+        score=int(pod_cfg["score"]),
+        spawn_y_min=32,
+        spawn_y_max=120,
+        speed_x=direction_x * speed * 0.4,
+        speed_y=speed * 0.16,
+        tag_labels=("enemy_pod", "pod"),
+        frame_time=0.1,
+    )
 
 
 def create_astronaut(world) -> int:
