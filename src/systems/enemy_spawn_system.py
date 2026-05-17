@@ -44,6 +44,13 @@ class EnemySpawnSystem:
             self.wave_index += 1
             self.wave_started = False
 
+    def reset(self) -> None:
+        self.wave_index = 0
+        self.wave_started = False
+        self.remaining_landers = 0
+        self.remaining_mutants = 0
+        self.spawn_timer = 0.0
+
     def _start_wave(self, world, wave: dict) -> None:
         initial_landers = int(self.enemies_cfg.get("initial_landers", 0)) if self.wave_index == 0 else 0
         initial_mutants = int(self.enemies_cfg.get("initial_mutants", 0)) if self.wave_index == 0 else 0
