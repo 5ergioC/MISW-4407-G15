@@ -9,6 +9,7 @@ from src.components.tag import Tag
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.engine.service_locator import ServiceLocator
+from src.factories.entity_factory import create_score_event
 
 
 class AstronautSystem:
@@ -22,6 +23,7 @@ class AstronautSystem:
         walk_speed = float(astronaut_cfg.get("walk_speed", 8.0))
         rescue_distance = 14.0
         carry_offset = 12.0
+        score_cfg = ServiceLocator.config.get("scoring")
 
         player_data = list(world.get_components(Transform, Velocity, Player))
         player_entity = None
@@ -58,6 +60,7 @@ class AstronautSystem:
                     astronaut.carrier_entity = player_entity
                     astronaut.rescued_from_fall = True
                     player_component.carried_astronaut = astronaut_entity
+                    create_score_event(world, int(score_cfg.get("astronaut_rescued_falling", 0)))
                     state.name = "carried_by_player"
                     state.elapsed = 0.0
                     velocity.value.update(0.0, 0.0)
@@ -103,6 +106,7 @@ class AstronautSystem:
 
             if astronaut.state == "deposited":
                 astronaut.deposited = True
+                create_score_event(world, int(score_cfg.get("astronaut_deposited", 0)))
                 astronaut.state = "walking"
                 state.name = "walking"
                 state.elapsed = 0.0

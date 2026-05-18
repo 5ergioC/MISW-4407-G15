@@ -231,6 +231,10 @@ def create_audio_event(world, sound_path: str) -> int:
     return world.create_entity(AudioEvent(sound_path))
 
 
+def create_score_event(world, amount: int) -> int:
+    return world.create_entity(ScoreValue(amount=amount), Tag("score_event"))
+
+
 def _create_enemy_entity(
     world,
     *,

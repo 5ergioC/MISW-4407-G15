@@ -34,6 +34,7 @@ class HUDSystem:
         planet_points: list[tuple[float, float]] | None = None,
         enemy_count: int = 0,
         enemy_fire_disabled: bool = False,
+        abduction_world_x: float | None = None,
     ) -> None:
         self._render_scanner(surface, camera, planet_points or [])
         font_path = self.interface_cfg["font"]["path"]
@@ -46,6 +47,8 @@ class HUDSystem:
         self._render_smart_bombs(surface, int(shared_state.get("smart_bombs", 0)))
 
         self._render_enemies(surface, font_path, enemy_count)
+        if abduction_world_x is not None and camera is not None:
+            self._render_abduction_arrow(surface, camera, abduction_world_x)
         if paused and pygame.time.get_ticks() // 250 % 2 == 0:
             paused_text = ServiceLocator.texts_service.render(
                 font_path, 10, "PAUSED", (pause_color["r"], pause_color["g"], pause_color["b"])
@@ -125,3 +128,22 @@ class HUDSystem:
         view_w = max(6, camera.width * scale_x)
         pygame.draw.line(surface, pygame.Color(245, 245, 245), (view_x, scanner.top), (view_x + view_w, scanner.top), 2)
         pygame.draw.line(surface, pygame.Color(245, 245, 245), (view_x, scanner.bottom), (view_x + view_w, scanner.bottom), 2)
+
+    def _render_abduction_arrow(self, surface: pygame.Surface, camera: Camera, target_world_x: float) -> None:
+        relative_x = (target_world_x - camera.x + camera.world_width / 2) % camera.world_width - camera.world_width / 2
+        screen_x = round(relative_x)
+        center_y = 56
+        color = pygame.Color(255, 92, 64)
+        if 0 <= screen_x <= camera.width:
+            pygame.draw.polygon(
+                surface,
+                color,
+                [(screen_x, center_y - 6), (screen_x - 5, center_y + 4), (screen_x + 5, center_y + 4)],
+            )
+            return
+
+        if screen_x < 0:
+            points = [(8, center_y), (20, center_y - 6), (20, center_y + 6)]
+        else:
+            points = [(312, center_y), (300, center_y - 6), (300, center_y + 6)]
+        pygame.draw.polygon(surface, color, points)

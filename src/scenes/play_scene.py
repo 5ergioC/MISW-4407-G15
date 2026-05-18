@@ -44,6 +44,9 @@ from src.systems.wraparound_system import WraparoundSystem
 from src.states.game_state import GameState
 
 from src.components.player import Player
+from src.components.enemy import Enemy
+from src.components.astronaut import Astronaut
+from src.components.state import State
 from src.components.renderable import Renderable
 from src.components.transform import Transform
 from src.components.velocity import Velocity
@@ -227,6 +230,7 @@ class PlayScene(Scene):
         self.scoring_system.update(self.world, self.engine.shared_state)
         self.lifetime_system.update(self.world, dt)
         self.audio_system.update(self.world, dt)
+        self._evaluate_run_outcome()
 
     def render(self) -> None:
         surface = self.virtual_screen
@@ -241,6 +245,13 @@ class PlayScene(Scene):
         for _, (tag,) in self.world.get_components(Tag):
             if tag.has("enemy"):
                 enemy_count += 1
+        abduction_world_x = None
+        for _, (transform, enemy, state, tag) in self.world.get_components(Transform, Enemy, State, Tag):
+            if not tag.has("enemy") or enemy.kind != "lander":
+                continue
+            if state.name in {"abducting", "ascending"} or enemy.alerting:
+                abduction_world_x = transform.position.x
+                break
         self.hud_system.render(
             surface,
             self.engine.shared_state,
@@ -249,4 +260,18 @@ class PlayScene(Scene):
             self.planet_system.points,
             enemy_count,
             self.enemy_fire_disabled,
+            abduction_world_x,
         )
+
+    def _evaluate_run_outcome(self) -> None:
+        live_astronauts = 0
+        for _, (astronaut, tag) in self.world.get_components(Astronaut, Tag):
+            if tag.has("astronaut") and astronaut.state != "dead":
+                live_astronauts += 1
+        if live_astronauts <= 0:
+            self.engine.shared_state["game_over_reason"] = "All astronauts lost"
+            self.switch_to("game_over")
+            return
+
+        if self.enemy_spawn_system.is_campaign_complete(self.world):
+            self.switch_to("win")

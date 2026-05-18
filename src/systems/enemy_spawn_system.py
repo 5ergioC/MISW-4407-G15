@@ -73,6 +73,15 @@ class EnemySpawnSystem:
         index = min(self.wave_index, len(self.waves) - 1)
         return self.waves[index]
 
+    def is_campaign_complete(self, world) -> bool:
+        if not self.waves or self.loop_after_last_wave:
+            return False
+        if self.wave_index < len(self.waves):
+            return False
+        if any(count > 0 for count in self.remaining_counts.values()):
+            return False
+        return self._count_by_tag(world, "enemy") == 0
+
     def _start_wave(self, world, wave: dict) -> None:
         for count_key, initial_key, _, _ in SPAWN_TYPES:
             initial_count = int(self.enemies_cfg.get(initial_key, 0)) if self.wave_index == 0 else 0

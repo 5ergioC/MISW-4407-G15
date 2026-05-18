@@ -9,11 +9,12 @@ from src.components.enemy import Enemy
 from src.components.player import Player
 from src.components.projectile import Projectile
 from src.components.renderable import Renderable
+from src.components.score_value import ScoreValue
 from src.components.state import State
 from src.components.tag import Tag
 from src.components.transform import Transform
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_enemy_death_fx
+from src.factories.entity_factory import create_enemy_death_fx, create_score_event
 
 
 class CollisionSystem:
@@ -44,6 +45,8 @@ class CollisionSystem:
                     enemies_to_delete.add(enemy_entity)
                     player_projectiles_to_delete.add(projectile_entity)
                     self._release_carried_astronaut(world, enemy_entity)
+                    if world.has_component(enemy_entity, ScoreValue):
+                        create_score_event(world, world.component_for_entity(enemy_entity, ScoreValue).amount)
                     create_enemy_death_fx(world, pygame.Vector2(enemy_rect.centerx, enemy_rect.centery))
                     if enemy_death_sound:
                         ServiceLocator.sounds_service.play(enemy_death_sound)
@@ -68,6 +71,11 @@ class CollisionSystem:
                         continue
                     enemy_projectiles_to_delete.add(enemy_projectile_entity)
                     player_projectiles_to_delete.add(projectile_entity)
+                    score_cfg = ServiceLocator.config.get("scoring")
+                    if enemy_projectile_component.kind == "missile":
+                        create_score_event(world, int(score_cfg.get("enemy_missile_destroyed", 0)))
+                    else:
+                        create_score_event(world, int(score_cfg.get("enemy_bullet_destroyed", 0)))
             for entity in enemy_projectiles_to_delete:
                 world.delete_entity(entity, immediate=True)
             for entity in player_projectiles_to_delete:
@@ -90,6 +98,7 @@ class CollisionSystem:
                     astronaut_renderable.visible = False
                     astronauts_to_hide.add(astronaut_entity)
                     player_projectiles_to_delete.add(projectile_entity)
+                    create_score_event(world, int(ServiceLocator.config.get("scoring").get("accidental_astronaut_kill", 0)))
             for astronaut_entity in astronauts_to_hide:
                 if world.has_component(astronaut_entity, State):
                     world.component_for_entity(astronaut_entity, State).name = "dead"
