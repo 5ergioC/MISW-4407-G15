@@ -234,7 +234,21 @@ class HUDSystem:
             sy = scanner.top + int(wy / world_height * scanner.height)
             return max(scanner.top + 1, min(scanner.bottom - 1, sy))
 
-        # astronaut dots
+        def terrain_sy_at(wx: float) -> int:
+            """Snap to nearest terrain surface Y in scanner coords."""
+            if not planet_points:
+                return dot_sy(world_height * 0.85)
+            best_y = planet_points[0][1]
+            best_dist = abs(planet_points[0][0] - wx)
+            for px, py in planet_points:
+                d = abs(px - wx)
+                if d < best_dist:
+                    best_dist, best_y = d, py
+                if d > best_dist + 8:
+                    break
+            return dot_sy(best_y)
+
+        # astronaut dots — snapped to terrain surface
         from src.components.astronaut import Astronaut
         for _, (astronaut, transform) in world.get_components(Astronaut, Transform):
             captured = astronaut.state in ("captured", "abducted", "carried")
@@ -243,7 +257,8 @@ class HUDSystem:
             color = pygame.Color(255, 50, 50) if captured else _ASTRO_COLOR
             sx = world_to_scan(transform.position.x)
             if inner.left <= sx <= inner.right:
-                pygame.draw.rect(surface, color, pygame.Rect(sx - 1, dot_sy(transform.position.y), 2, 2))
+                sy = terrain_sy_at(transform.position.x) if not captured else dot_sy(transform.position.y)
+                pygame.draw.rect(surface, color, pygame.Rect(sx - 1, sy, 2, 2))
 
         # enemy dots
         from src.components.enemy import Enemy

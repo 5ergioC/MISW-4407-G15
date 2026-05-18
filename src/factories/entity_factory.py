@@ -660,7 +660,10 @@ def create_astronaut(world, spawn_x: float | None = None) -> int:
 
     if spawn_x is None:
         spawn_x = random.uniform(0, world_cfg["width"])
-    spawn_y = ground_y
+    planet_cfg = world_cfg.get("planet", {})
+    terrain_min = float(planet_cfg.get("min_y", ground_y - 40))
+    terrain_max = float(planet_cfg.get("max_y", ground_y))
+    spawn_y = random.uniform(terrain_min + 10, min(ground_y, terrain_max - 4))
 
     entity = world.create_entity()
     world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
@@ -736,6 +739,10 @@ def create_explosion(
     speed_max: float = 60.0,
     lifetime_min: float = 0.3,
     lifetime_max: float = 0.7,
+    radius_min: float = 0.8,
+    radius_max: float = 2.0,
+    spawn_radius: float = 0.0,
+    particle_shape: str = "circle",
 ) -> list[int]:
     start_color, end_color = _EXPLOSION_COLORS.get(kind, _EXPLOSION_COLORS["generic"])
     entities: list[int] = []
@@ -764,14 +771,15 @@ def create_explosion(
         vx = math.cos(angle) * speed
         vy = math.sin(angle) * speed
         lt = random.uniform(lifetime_min, lifetime_max)
-        radius = random.uniform(0.8, 2.0)
+        radius = random.uniform(radius_min, radius_max)
         end = (
             (random.randint(180, 255), random.randint(50, 200), random.randint(0, 80))
             if kind == "player"
             else end_color
         )
         entity = world.create_entity()
-        world.add_component(entity, Transform(position.copy()))
+        spawn_offset = pygame.Vector2(math.cos(angle), math.sin(angle)) * random.uniform(0, spawn_radius) if spawn_radius > 0 else pygame.Vector2()
+        world.add_component(entity, Transform(position.copy() + spawn_offset))
         world.add_component(entity, Velocity(pygame.Vector2(vx, vy)))
         world.add_component(
             entity,

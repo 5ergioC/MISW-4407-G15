@@ -40,7 +40,10 @@ class ECSWorld:
 
     def delete_entity(self, entity: int, immediate: bool = False) -> None:
         self._activate()
-        esper.delete_entity(entity, immediate=immediate)
+        try:
+            esper.delete_entity(entity, immediate=immediate)
+        except (KeyError, ValueError):
+            pass
 
     def entity_exists(self, entity: int) -> bool:
         self._activate()

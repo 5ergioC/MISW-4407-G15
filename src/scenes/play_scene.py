@@ -96,7 +96,7 @@ class PlayScene(Scene):
         self.wraparound_system = WraparoundSystem()
         self.lifetime_system = LifetimeSystem()
         self.shooting_system = ShootingSystem()
-        self.player_respawn_delay = 1.4
+        self.player_respawn_delay = 2.2
         self.player_respawn_timer = 0.0
         self.player_dying = False
         self.player_death_outcome: str | None = None
@@ -138,18 +138,67 @@ class PlayScene(Scene):
             velocity.value = pygame.Vector2(0, 0)
             renderable.color = pygame.Color(255, 50, 50)
 
+    # Death animation: frame timings (seconds per blink step)
+    _DEATH_BLINK = 0.09   # on/off duration per blink
+    _DEATH_FRAMES = 3     # frames in player_death.png
+
     def _update_player_death_flash(self, dt: float) -> None:
+        if self._player_exploded:
+            return
         self._player_flash_timer += dt
-        blink_on = int(self._player_flash_timer / 0.06) % 2 == 0
-        for _, (transform, _, player, renderable) in self.world.get_components(Transform, Velocity, Player, Renderable):
-            if not self._player_exploded:
-                renderable.visible = blink_on
-                renderable.color = pygame.Color(255, 50, 50) if blink_on else pygame.Color(255, 180, 180)
-            if self._player_flash_timer >= self._player_flash_duration and not self._player_exploded:
-                self._player_exploded = True
+
+        # Sequence per frame: on-off-on-off = 4 blinks = 4 * 2 * BLINK seconds
+        blinks_per_frame = 2
+        step_duration = self._DEATH_BLINK
+        frame_duration = blinks_per_frame * 2 * step_duration  # 0.36s per frame
+        total_flash = self._DEATH_FRAMES * frame_duration       # 1.08s total
+
+        t = self._player_flash_timer
+        if t >= total_flash:
+            # Trigger explosion
+            self._player_exploded = True
+            for _, (transform, _, player, renderable) in self.world.get_components(Transform, Velocity, Player, Renderable):
                 renderable.visible = False
+                # hide burner too
+                if player.burner_entity >= 0 and self.world.has_component(player.burner_entity, Renderable):
+                    self.world.component_for_entity(player.burner_entity, Renderable).visible = False
                 from src.factories.entity_factory import create_explosion
-                create_explosion(self.world, transform.position.copy(), kind="player", count=22, speed_min=25, speed_max=80)
+                create_explosion(
+                    self.world, transform.position.copy(),
+                    kind="player", count=80,
+                    speed_min=30, speed_max=200,
+                    lifetime_min=0.7, lifetime_max=1.5,
+                    radius_min=1.5, radius_max=3.5,
+                    spawn_radius=6.0,
+                )
+            return
+
+        frame_idx = int(t / frame_duration)
+        frame_idx = min(frame_idx, self._DEATH_FRAMES - 1)
+        time_in_frame = t % frame_duration
+        blink_on = int(time_in_frame / step_duration) % 2 == 0
+
+        has_death_sprite = ServiceLocator.images_service.has("img/player_death.png") if hasattr(ServiceLocator.images_service, "has") else False
+        try:
+            ServiceLocator.images_service.get("img/player_death.png")
+            has_death_sprite = True
+        except Exception:
+            has_death_sprite = False
+
+        for _, (_, _, player, renderable) in self.world.get_components(Transform, Velocity, Player, Renderable):
+            renderable.visible = blink_on
+            if blink_on:
+                if has_death_sprite:
+                    renderable.image_path = "img/player_death.png"
+                    sheet = ServiceLocator.images_service.get("img/player_death.png")
+                    fw = max(1, sheet.get_width() // self._DEATH_FRAMES)
+                    renderable.sprite_frame_width = fw
+                    renderable.sprite_frame = frame_idx
+                else:
+                    renderable.color = pygame.Color(255, 50, 50)
+            # hide burner during death
+            if player.burner_entity >= 0 and self.world.has_component(player.burner_entity, Renderable):
+                self.world.component_for_entity(player.burner_entity, Renderable).visible = False
 
     def _finish_player_respawn(self) -> None:
         if self.player_death_outcome == "game_over":
