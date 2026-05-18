@@ -35,7 +35,7 @@ class HUDSystem:
         paused: bool,
         camera: Camera | None = None,
         planet_points: list[tuple[float, float]] | None = None,
-        enemy_counts: dict[str, int] | None = None,
+        enemy_count: int = 0,
         astronaut_count: int = 0,
         enemy_fire_disabled: bool = False,
         abduction_world_x: float | None = None,
@@ -50,7 +50,7 @@ class HUDSystem:
 
         self._render_smart_bombs(surface, int(shared_state.get("smart_bombs", 0)))
 
-        self._render_counts(surface, font_path, enemy_counts or {}, astronaut_count)
+        self._render_counts(surface, font_path, enemy_count, astronaut_count)
         if abduction_world_x is not None and camera is not None:
             self._render_abduction_arrow(surface, camera, abduction_world_x)
         if paused and pygame.time.get_ticks() // 250 % 2 == 0:
@@ -90,31 +90,12 @@ class HUDSystem:
             y = base_y + index * v_spacing
             surface.blit(icon, (base_x, y))
 
-    def _render_counts(self, surface: pygame.Surface, font_path: str, enemy_counts: dict[str, int], astronaut_count: int) -> None:
+    def _render_counts(self, surface: pygame.Surface, font_path: str, enemy_count: int, astronaut_count: int) -> None:
         value_color = (255, 244, 72)
-        panel_left = 238
-        panel_top = 4
-        cell_width = 38
-        row_height = 9
-        entries = [
-            ("lander", enemy_counts.get("lander", 0)),
-            ("mutant", enemy_counts.get("mutant", 0)),
-            ("bomber", enemy_counts.get("bomber", 0)),
-            ("baiter", enemy_counts.get("baiter", 0)),
-            ("swarmer", enemy_counts.get("swarmer", 0)),
-            ("pod", enemy_counts.get("pod", 0)),
-            ("astronaut", astronaut_count),
-        ]
-
-        for index, (kind, amount) in enumerate(entries):
-            column = index % 2
-            row = index // 2
-            cell_x = panel_left + column * cell_width
-            cell_y = panel_top + row * row_height
-            icon = self.counter_icons[kind]
-            surface.blit(icon, (cell_x, cell_y))
-            value_surface = ServiceLocator.texts_service.render(font_path, 6, f"{amount:02}", value_color)
-            surface.blit(value_surface, value_surface.get_rect(topleft=(cell_x + 12, cell_y + 1)))
+        enemies_value = ServiceLocator.texts_service.render(font_path, 8, f"{enemy_count:02}", value_color)
+        astronauts_value = ServiceLocator.texts_service.render(font_path, 7, f"{astronaut_count:02}", value_color)
+        surface.blit(enemies_value, enemies_value.get_rect(topright=(314, 10)))
+        surface.blit(astronauts_value, astronauts_value.get_rect(topright=(314, 28)))
 
     def _render_scanner(
         self,
