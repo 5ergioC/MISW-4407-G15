@@ -12,7 +12,7 @@ from src.components.tag import Tag
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_enemy_bullet
+from src.factories.entity_factory import create_enemy_bullet, create_enemy_missile
 
 
 SHOOTING_KINDS = {"lander", "mutant", "bomber", "baiter", "swarmer"}
@@ -25,6 +25,16 @@ class EnemyFireSystem:
         self.cooldowns: dict[int, float] = {}
         self.rng = random.Random()
         self.enabled: bool = True
+        self.wave_fire_rate: float = 1.0
+        self.wave_missile_chance: float = 0.0
+
+    def set_wave_context(self, wave: dict | None) -> None:
+        if not wave:
+            self.wave_fire_rate = 1.0
+            self.wave_missile_chance = 0.0
+            return
+        self.wave_fire_rate = max(0.2, float(wave.get("enemy_fire_rate", 1.0)))
+        self.wave_missile_chance = max(0.0, float(wave.get("missile_chance", 0.0)))
 
     def update(self, world, dt: float, camera: Camera) -> None:
         if not self.enabled:
@@ -56,15 +66,27 @@ class EnemyFireSystem:
             if direction.length_squared() <= 0.01:
                 direction = pygame.Vector2(1, 0)
 
-            bullet_speed = float(self.enemies_cfg["bullet"]["speed"])
+            use_missile = enemy.kind in {"lander", "mutant"} and self.rng.random() < self._missile_chance()
             bullet_offset = self._bullet_spawn_offset(direction)
-            create_enemy_bullet(
-                world,
-                enemy_transform.position + bullet_offset,
-                direction,
-                bullet_speed,
-                enemy_velocity.value,
-            )
+            if use_missile:
+                missile_speed = float(self.enemies_cfg["missile"]["speed"])
+                create_enemy_missile(
+                    world,
+                    enemy_transform.position + bullet_offset,
+                    direction,
+                    missile_speed,
+                    enemy_velocity.value,
+                    source_kind=enemy.kind,
+                )
+            else:
+                bullet_speed = float(self.enemies_cfg["bullet"]["speed"])
+                create_enemy_bullet(
+                    world,
+                    enemy_transform.position + bullet_offset,
+                    direction,
+                    bullet_speed,
+                    enemy_velocity.value,
+                )
             enemy_shoot_sound = self.audio_cfg["sounds"].get("enemy_shoot")
             if enemy_shoot_sound:
                 ServiceLocator.sounds_service.play(enemy_shoot_sound)
@@ -78,7 +100,13 @@ class EnemyFireSystem:
         maximum = float(enemy_cfg.get("fire_cooldown_max", minimum))
         if maximum < minimum:
             maximum = minimum
-        return self.rng.uniform(minimum, maximum)
+        cooldown = self.rng.uniform(minimum, maximum)
+        return cooldown / self.wave_fire_rate
+
+    def _missile_chance(self) -> float:
+        missile_cfg = self.enemies_cfg.get("missile", {})
+        multiplier = float(missile_cfg.get("chance_multiplier", 0.35))
+        return min(0.95, self.wave_missile_chance * multiplier)
 
     def _bullet_spawn_offset(self, direction: pygame.Vector2) -> pygame.Vector2:
         direction = direction.normalize() if direction.length_squared() > 0 else pygame.Vector2(1, 0)

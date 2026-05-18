@@ -67,6 +67,12 @@ class EnemySpawnSystem:
         self.remaining_counts = {count_key: 0 for count_key, *_ in SPAWN_TYPES}
         self.spawn_timer = 0.0
 
+    def current_wave(self) -> dict | None:
+        if not self.waves:
+            return None
+        index = min(self.wave_index, len(self.waves) - 1)
+        return self.waves[index]
+
     def _start_wave(self, world, wave: dict) -> None:
         for count_key, initial_key, _, _ in SPAWN_TYPES:
             initial_count = int(self.enemies_cfg.get(initial_key, 0)) if self.wave_index == 0 else 0

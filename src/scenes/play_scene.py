@@ -208,6 +208,7 @@ class PlayScene(Scene):
             return
         self.shooting_system.update(dt)
         self.enemy_spawn_system.update(self.world, dt)
+        self.enemy_fire_system.set_wave_context(self.enemy_spawn_system.current_wave())
         self.lander_ai_system.update(self.world, dt)
         self.mutant_ai_system.update(self.world, dt)
         self.enemy_fire_system.update(self.world, dt, self.camera)

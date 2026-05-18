@@ -120,9 +120,58 @@ def create_enemy_bullet(world, position: pygame.Vector2, direction: pygame.Vecto
         ),
     )
     world.add_component(entity, Collider(bullet_size, pygame.Vector2()))
-    world.add_component(entity, Projectile(owner="enemy", direction=travel_direction, speed=speed, damage=1))
+    world.add_component(entity, Projectile(owner="enemy", direction=travel_direction, speed=speed, damage=1, kind="bullet"))
     world.add_component(entity, Lifetime(float(bullet_cfg["lifetime"])))
     world.add_component(entity, Tag("enemy_projectile"))
+    return entity
+
+
+def create_enemy_missile(
+    world,
+    position: pygame.Vector2,
+    direction: pygame.Vector2,
+    speed: float,
+    owner_velocity: pygame.Vector2 | None = None,
+    source_kind: str = "lander",
+) -> int:
+    enemies_cfg = ServiceLocator.config.get("enemies")
+    missile_cfg = enemies_cfg["missile"]
+    image_path = "img/bomber_bomb.png"
+    sheet = ServiceLocator.images_service.get(image_path)
+    missile_size = pygame.Vector2(max(1, sheet.get_width()), max(1, sheet.get_height()))
+    travel_direction = direction.normalize() if direction.length_squared() > 0 else pygame.Vector2(1, 0)
+    velocity = travel_direction * speed
+    if owner_velocity is not None:
+        velocity += owner_velocity * 0.2
+
+    entity = world.create_entity()
+    world.add_component(entity, Transform(position.copy()))
+    world.add_component(entity, Velocity(velocity))
+    world.add_component(
+        entity,
+        Renderable(
+            shape="image",
+            size=missile_size,
+            color=pygame.Color(255, 255, 255),
+            layer=8,
+            image_path=image_path,
+            centered=True,
+        ),
+    )
+    world.add_component(entity, Collider(missile_size, pygame.Vector2()))
+    world.add_component(
+        entity,
+        Projectile(
+            owner="enemy",
+            direction=travel_direction,
+            speed=speed,
+            damage=1,
+            kind="missile",
+            source_kind=source_kind,
+        ),
+    )
+    world.add_component(entity, Lifetime(float(missile_cfg["lifetime"])))
+    world.add_component(entity, Tag("enemy_projectile", "enemy_missile"))
     return entity
 
 
