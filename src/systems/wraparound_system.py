@@ -11,7 +11,6 @@ class WraparoundSystem:
                 if world_width > 0:
                     transform.position.x %= world_width
             if wraparound.vertical and wraparound.world_height is not None:
-                if transform.position.y < -wraparound.margin:
-                    transform.position.y = wraparound.world_height + wraparound.margin
-                elif transform.position.y > wraparound.world_height + wraparound.margin:
-                    transform.position.y = -wraparound.margin
+                world_height = float(wraparound.world_height)
+                if world_height > 0:
+                    transform.position.y %= world_height
