@@ -5,6 +5,7 @@ from pathlib import Path
 import pygame
 
 from src.engine.service_locator import ServiceLocator
+from src.scenes.bonus.high_score_scene import HighScoreScene
 from src.scenes.game_over_scene import GameOverScene
 from src.scenes.menu_scene import MenuScene
 from src.scenes.play_scene import PlayScene
@@ -32,9 +33,11 @@ class GameEngine:
             self.window_config["bg_color"]["g"],
             self.window_config["bg_color"]["b"],
         )
+        player_cfg = ServiceLocator.config.get("player")
         self.shared_state: dict[str, object] = {
             "score": 0,
-            "lives": ServiceLocator.config.get("player")["lives"],
+            "lives": player_cfg["lives"],
+            "smart_bombs": player_cfg.get("smart_bombs", 3),
             "level_complete": False,
             "game_over_reason": "",
         }
@@ -43,12 +46,15 @@ class GameEngine:
             "play": PlayScene(self),
             "game_over": GameOverScene(self),
             "win": WinScene(self),
+            "high_score": HighScoreScene(self),
         }
         self.current_scene = self.scenes["menu"]
 
     def reset_run_state(self) -> None:
+        player_cfg = ServiceLocator.config.get("player")
         self.shared_state["score"] = 0
-        self.shared_state["lives"] = ServiceLocator.config.get("player")["lives"]
+        self.shared_state["lives"] = player_cfg["lives"]
+        self.shared_state["smart_bombs"] = player_cfg.get("smart_bombs", 3)
         self.shared_state["level_complete"] = False
         self.shared_state["game_over_reason"] = ""
 

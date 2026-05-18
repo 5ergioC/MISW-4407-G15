@@ -5,18 +5,27 @@ import pygame
 from src.commands.scene_command import SceneCommand
 from src.core.scene import Scene
 from src.engine.service_locator import ServiceLocator
+from src.systems.bonus.high_score_system import HighScoreSystem
 from src.systems.input_command_system import InputCommandSystem
 
 
 class WinScene(Scene):
     def enter(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
+        self.hs_system = HighScoreSystem(ServiceLocator.config._config_path)
         self.input_system = InputCommandSystem(
             {
-                pygame.K_RETURN: SceneCommand(lambda: self.switch_to("menu")),
+                pygame.K_RETURN: SceneCommand(self._on_confirm),
                 pygame.K_ESCAPE: SceneCommand(lambda: self.switch_to("menu")),
             }
         )
+
+    def _on_confirm(self) -> None:
+        score = int(self.engine.shared_state.get("score", 0))
+        if self.hs_system.qualifies(score):
+            self.switch_to("high_score")
+        else:
+            self.switch_to("menu")
 
     def handle_event(self, event: pygame.event.Event) -> None:
         self.input_system.process_event(self.world, event)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pygame
 
 from src.components.camera import Camera
+from src.commands.bonus.smart_bomb_command import SmartBombCommand
 from src.commands.move_command import MoveCommand
 from src.commands.pause_command import PauseCommand
 from src.commands.scene_command import SceneCommand
@@ -31,6 +32,7 @@ from src.systems.player_movement_system import PlayerMovementSystem
 from src.systems.planet_system import PlanetSystem
 from src.systems.projectile_system import ProjectileSystem
 from src.systems.render_system import RenderSystem
+from src.systems.bonus.smart_bomb_system import SmartBombSystem
 from src.systems.scoring_system import ScoringSystem
 from src.systems.shooting_system import ShootingSystem
 from src.systems.wraparound_system import WraparoundSystem
@@ -68,6 +70,7 @@ class PlayScene(Scene):
         self.projectile_system = ProjectileSystem()
         self.collision_system = CollisionSystem()
         self.particle_system = ParticleSystem()
+        self.smart_bomb_system = SmartBombSystem()
         self.scoring_system = ScoringSystem()
         self.pause_visibility_system = PauseVisibilitySystem()
         self.movement_system = PlayerMovementSystem()
@@ -87,6 +90,7 @@ class PlayScene(Scene):
                 pygame.K_DOWN: MoveCommand(pygame.Vector2(0, 1)),
                 pygame.K_s: MoveCommand(pygame.Vector2(0, 1)),
                 pygame.K_SPACE: ShootCommand(self.shooting_system.fire),
+                pygame.K_b: SmartBombCommand(self._use_smart_bomb),
                 pygame.K_p: PauseCommand(self._toggle_pause),
                 pygame.K_ESCAPE: SceneCommand(lambda: self.switch_to("menu")),
             }
@@ -97,6 +101,9 @@ class PlayScene(Scene):
         create_planet(self.world)
         create_player(self.world)
         create_audio_event(self.world, "snd/game_start.ogg")
+
+    def _use_smart_bomb(self, world) -> None:
+        self.smart_bomb_system.activate(world, self.camera, self.engine.shared_state)
 
     def _toggle_pause(self) -> None:
         if self.state == GameState.PLAYING:
@@ -143,4 +150,5 @@ class PlayScene(Scene):
             self.state == GameState.PAUSED,
             self.camera,
             self.planet_system.points,
+            self.world,
         )
