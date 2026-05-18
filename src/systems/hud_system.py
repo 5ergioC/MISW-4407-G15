@@ -26,8 +26,15 @@ class HUDSystem:
         )
         scaled_smart_bomb_icon = pygame.transform.smoothscale(raw_smart_bomb_icon, smart_bomb_size)
         self.smart_bomb_icon = scaled_smart_bomb_icon
-        self.enemy_icon = self._build_counter_icon("img/enemy_lander.png", frame_count=5, scale=0.65)
-        self.astronaut_icon = self._build_counter_icon("img/astronaut.png", frame_count=3, scale=0.95)
+        self.counter_icons = {
+            "lander": self._build_counter_icon("img/enemy_lander.png", frame_count=5, scale=0.58),
+            "mutant": self._build_counter_icon("img/enemy_mutant.png", frame_count=5, scale=0.58),
+            "bomber": self._build_counter_icon("img/enemy_bomber.png", frame_count=5, scale=0.52),
+            "baiter": self._build_counter_icon("img/enemy_baiter.png", frame_count=5, scale=0.52),
+            "swarmer": self._build_counter_icon("img/enemy_swarmer.png", frame_count=1, scale=0.8),
+            "pod": self._build_counter_icon("img/enemy_pod.png", frame_count=1, scale=0.5),
+            "astronaut": self._build_counter_icon("img/astronaut.png", frame_count=3, scale=0.82),
+        }
 
     def render(
         self,
@@ -36,7 +43,7 @@ class HUDSystem:
         paused: bool,
         camera: Camera | None = None,
         planet_points: list[tuple[float, float]] | None = None,
-        enemy_count: int = 0,
+        enemy_counts: dict[str, int] | None = None,
         astronaut_count: int = 0,
         enemy_fire_disabled: bool = False,
         abduction_world_x: float | None = None,
@@ -51,7 +58,7 @@ class HUDSystem:
 
         self._render_smart_bombs(surface, int(shared_state.get("smart_bombs", 0)))
 
-        self._render_counts(surface, font_path, enemy_count, astronaut_count)
+        self._render_counts(surface, font_path, enemy_counts or {}, astronaut_count)
         if abduction_world_x is not None and camera is not None:
             self._render_abduction_arrow(surface, camera, abduction_world_x)
         if paused and pygame.time.get_ticks() // 250 % 2 == 0:
@@ -91,18 +98,31 @@ class HUDSystem:
             y = base_y + index * v_spacing
             surface.blit(icon, (base_x, y))
 
-    def _render_counts(self, surface: pygame.Surface, font_path: str, enemies_count: int, astronaut_count: int) -> None:
+    def _render_counts(self, surface: pygame.Surface, font_path: str, enemy_counts: dict[str, int], astronaut_count: int) -> None:
         value_color = (255, 244, 72)
-        enemies_value = ServiceLocator.texts_service.render(font_path, 8, str(enemies_count), value_color)
-        astronauts_value = ServiceLocator.texts_service.render(font_path, 8, str(astronaut_count), value_color)
-        enemy_row_y = 8
-        astronaut_row_y = 22
-        icon_x = 240
-        surface.blit(self.enemy_icon, (icon_x, enemy_row_y))
-        surface.blit(self.astronaut_icon, (icon_x + 1, astronaut_row_y))
-        value_x = 312
-        surface.blit(enemies_value, enemies_value.get_rect(topright=(value_x, enemy_row_y + 1)))
-        surface.blit(astronauts_value, astronauts_value.get_rect(topright=(value_x, astronaut_row_y + 1)))
+        panel_left = 238
+        panel_top = 4
+        cell_width = 38
+        row_height = 9
+        entries = [
+            ("lander", enemy_counts.get("lander", 0)),
+            ("mutant", enemy_counts.get("mutant", 0)),
+            ("bomber", enemy_counts.get("bomber", 0)),
+            ("baiter", enemy_counts.get("baiter", 0)),
+            ("swarmer", enemy_counts.get("swarmer", 0)),
+            ("pod", enemy_counts.get("pod", 0)),
+            ("astronaut", astronaut_count),
+        ]
+
+        for index, (kind, amount) in enumerate(entries):
+            column = index % 2
+            row = index // 2
+            cell_x = panel_left + column * cell_width
+            cell_y = panel_top + row * row_height
+            icon = self.counter_icons[kind]
+            surface.blit(icon, (cell_x, cell_y))
+            value_surface = ServiceLocator.texts_service.render(font_path, 6, f"{amount:02}", value_color)
+            surface.blit(value_surface, value_surface.get_rect(topleft=(cell_x + 12, cell_y + 1)))
 
     def _render_scanner(
         self,
