@@ -20,6 +20,11 @@ class GameOverScene(Scene):
                 pygame.K_ESCAPE: SceneCommand(lambda: self.switch_to("menu")),
             }
         )
+        # play game over sound if configured
+        audio_cfg = ServiceLocator.config.get("audio")
+        game_over_sound = audio_cfg.get("sounds", {}).get("game_over")
+        if game_over_sound:
+            ServiceLocator.sounds_service.play(game_over_sound)
 
     def _on_confirm(self) -> None:
         score = int(self.engine.shared_state.get("score", 0))

@@ -188,18 +188,17 @@ Una tarea de este rol esta terminada cuando:
 
 ## Checklist de rubrica asignada
 
-- [ ] Movimiento de nave con inercia.
-- [ ] Disparo del jugador.
-- [ ] Laser atraviesa enemigos visibles.
-- [ ] Laser no afecta fuera de pantalla.
-- [ ] Colisiones de laser con enemigos.
-- [ ] Colisiones de laser con balas/misiles.
-- [ ] Colisiones de laser con astronautas.
-- [ ] Colisiones de balas enemigas con jugador.
-- [ ] Puntaje visible.
-- [ ] Vidas visibles.
-- [ ] Game Over por muerte del jugador.
-- [ ] Game Over por perdida total de astronautas, integrado con Persona 3.
-- [ ] Victoria por completar nivel.
-- [ ] Command usado para input.
-
+- [X] Movimiento de nave con inercia.
+- [X] Disparo del jugador.
+- [X] Laser atraviesa enemigos visibles.
+- [X] Laser no afecta fuera de pantalla.
+- [X] Colisiones de laser con enemigos.
+- [X] Colisiones de laser con balas/misiles.
+- [X] Colisiones de laser con astronautas.
+- [X] Colisiones de balas enemigas con jugador.
+- [X] Puntaje visible.
+- [X] Vidas visibles.
+- [X] Game Over por muerte del jugador.
+- [X] Game Over por perdida total de astronautas, integrado con Persona 3.
+- [X] Victoria por completar nivel.
+- [X] Command usado para input.

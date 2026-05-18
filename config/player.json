@@ -8,7 +8,8 @@
     "h": 8
   },
   "thrust": 1680.0,
-  "drag": 0.9,
+  "drag": 0.98,
+  "vertical_drag": 0.92,
   "max_speed": 420.0,
   "max_speed_x": 320.0,
   "max_speed_y": 240.0,

@@ -63,6 +63,7 @@ class HUDSystem:
         enemy_count: int = 0,
         astronaut_count: int = 0,
         enemy_fire_disabled: bool = False,
+        player_invulnerable: bool = False,
         abduction_world_x: float | None = None,
     ) -> None:
         pygame.draw.rect(surface, (0, 0, 0), pygame.Rect(0, 0, 320, _HUD_BOTTOM))
@@ -103,6 +104,10 @@ class HUDSystem:
         if enemy_fire_disabled and pygame.time.get_ticks() // 400 % 2 == 0:
             disabled_text = ServiceLocator.texts_service.render(font_path, 8, "ENEMY FIRE OFF", (220, 60, 60))
             surface.blit(disabled_text, disabled_text.get_rect(center=(160, 12)))
+
+        if player_invulnerable and pygame.time.get_ticks() // 400 % 2 == 0:
+            inv_text = ServiceLocator.texts_service.render(font_path, 8, "INVULNERABLE", (80, 200, 255))
+            surface.blit(inv_text, inv_text.get_rect(center=(160, 24)))
 
     # ── Lives ──────────────────────────────────────────────────────────────
 
@@ -250,7 +255,10 @@ class HUDSystem:
 
         # astronaut dots — snapped to terrain surface
         from src.components.astronaut import Astronaut
-        for _, (astronaut, transform) in world.get_components(Astronaut, Transform):
+        from src.components.state import State
+        for _, (astronaut, transform, state) in world.get_components(Astronaut, Transform, State):
+            if state.name == "dead" or astronaut.state == "dead":
+                continue
             captured = astronaut.state in ("captured", "abducted", "carried")
             if captured and not blink_on:
                 continue

@@ -108,6 +108,7 @@ def create_laser(world, position: pygame.Vector2, direction: float, owner_veloci
             size=laser_size,
             color=pygame.Color(255, 240, 150),
             layer=8,
+            centered=True,
             trail_length=30,
             trail_dir=direction,
         ),
@@ -465,7 +466,7 @@ def _generate_planet_points(
         y = target_y
     if points[-1][0] < width:
         points.append((float(width), float(round(y))))
-    # blend last 15% toward start y for seamless wraparound
+
     if len(points) > 20:
         blend_count = max(8, len(points) // 7)
         start_y = points[0][1]
@@ -503,6 +504,7 @@ def create_input_commands(world) -> None:
         pygame.K_p: "PLAYER_PAUSE",
         pygame.K_o: "PLAYER_LOSE_LIFE",
         pygame.K_v: "PLAYER_WIN",
+        pygame.K_i: "PLAYER_INVULNERABLE",
         pygame.K_ESCAPE: "PLAYER_MENU",
         pygame.K_h: "TOGGLE_ENEMY_FIRE",
     }

@@ -25,12 +25,11 @@ class RenderSystem:
             if renderable.trail_length > 0:
                 self._draw_trail(surface, renderable, round(screen_x), screen_y)
             if renderable.shape == "rect":
-                rect = pygame.Rect(
-                    round(screen_x),
-                    screen_y,
-                    round(renderable.size.x),
-                    round(renderable.size.y),
-                )
+                rect = pygame.Rect(0, 0, round(renderable.size.x), round(renderable.size.y))
+                if renderable.centered:
+                    rect.center = (round(screen_x), screen_y)
+                else:
+                    rect.topleft = (round(screen_x), screen_y)
                 pygame.draw.rect(surface, renderable.color, rect)
             elif renderable.shape == "triangle":
                 points = [
@@ -68,7 +67,7 @@ class RenderSystem:
         dx = int(-renderable.trail_dir)
         for i in range(1, steps + 1):
             t = i / (steps + 1)
-            # fade: white → bullet color → dark
+            
             if t < 0.4:
                 ratio = t / 0.4
                 r = int(255 + (c.r - 255) * ratio)

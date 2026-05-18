@@ -28,3 +28,4 @@ class Player:
     thrust_anim_frame: int = 0
     is_shooting: bool = False
     carried_astronaut: int | None = None
+    turn_timer: float = 0.0

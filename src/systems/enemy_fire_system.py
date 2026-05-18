@@ -26,6 +26,7 @@ class EnemyFireSystem:
         self.cooldowns: dict[int, float] = {}
         self.rng = random.Random()
         self.enabled: bool = True
+        self.mute_fire_sound: bool = False
         self.wave_fire_rate: float = 1.0
         self.wave_missile_chance: float = 0.0
 
@@ -92,7 +93,7 @@ class EnemyFireSystem:
                     enemy_velocity.value,
                 )
             enemy_shoot_sound = self.audio_cfg["sounds"].get("enemy_shoot")
-            if enemy_shoot_sound:
+            if enemy_shoot_sound and not self.mute_fire_sound:
                 ServiceLocator.sounds_service.play(enemy_shoot_sound)
             self.cooldowns[enemy_entity] = self._random_fire_cooldown(enemy.kind)
 
