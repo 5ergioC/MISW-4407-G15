@@ -145,7 +145,8 @@ def create_enemy_missile(
     missile_cfg = enemies_cfg["missile"]
     image_path = "img/bomber_bomb.png"
     sheet = ServiceLocator.images_service.get(image_path)
-    missile_size = pygame.Vector2(max(1, sheet.get_width()), max(1, sheet.get_height()))
+    missile_frame_width = max(1, sheet.get_width() // 5)
+    missile_size = pygame.Vector2(missile_frame_width, max(1, sheet.get_height()))
     travel_direction = direction.normalize() if direction.length_squared() > 0 else pygame.Vector2(1, 0)
     velocity = travel_direction * speed
     if owner_velocity is not None:
