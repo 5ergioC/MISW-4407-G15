@@ -221,8 +221,14 @@ Cobertura actual:
 - Rapto, ascenso, mutacion y liberacion del astronauta.
 - Astronautas en suelo, caida, muerte, rescate y deposito.
 - Balas enemigas y misiles activos en olas.
-- Flecha de rapto y contador visual por tipo en HUD.
+- Flecha de rapto y contador visual resumido en HUD.
 - Ajustes recientes de UX: mundo horizontal mas corto y navegacion con wraparound real.
+
+Validacion manual recomendada antes del merge final:
+
+- rescatar un astronauta cerca de los bordes del mundo
+- verificar que el paso fin-inicio de nave y enemigos se sienta continuo
+- confirmar que el HUD derecho muestra `ENEMIES` total y astronauta con icono
 
 Riesgos residuales razonables para la entrega:
 
