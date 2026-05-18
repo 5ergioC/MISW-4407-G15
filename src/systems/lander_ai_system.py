@@ -30,10 +30,10 @@ class LanderAISystem:
                 player_pos = t.position.copy()
                 break
 
-        astronauts = []
+        astronauts: dict[int, pygame.Vector2] = {}
         for ent, (t, astro, tag) in world.get_components(Transform, Astronaut, Tag):
             if tag.has("astronaut") and astro.state == "walking":
-                astronauts.append((ent, t))
+                astronauts[ent] = t.position.copy()
 
         for ent, (t, v, enemy, state, tag) in world.get_components(Transform, Velocity, Enemy, State, Tag):
             if enemy.kind != "lander" or not tag.has("enemy"):
@@ -41,13 +41,12 @@ class LanderAISystem:
 
             cfg = self.enemies_cfg.get("lander", {})
             patrol_speed = float(cfg.get("speed", 40.0))
-            abduction_speed = float(cfg.get("abduction_speed", 18.0))
+            vertical_speed = float(cfg.get("vertical_speed", 30.0))
             seek_radius = float(cfg.get("seek_radius", 90.0))
+            capture_distance = float(cfg.get("capture_distance", 18.0))
+            state.elapsed += dt
 
-            # State machine: patrol, seek_astronaut, abducting, ascending, attack_player
-            current = state.name if hasattr(state, "name") else getattr(state, "state", "patrol")
-
-
+            current = state.name
             player_visible = False
             if player_pos is not None:
                 dx = abs(player_pos.x - t.position.x)
@@ -55,39 +54,73 @@ class LanderAISystem:
                     player_visible = True
 
             if current in ("abducting", "ascending"):
-                if current == "abducting":
-                    v.value.y = -abduction_speed
+                continue
+
+            target_position = astronauts.get(enemy.target_entity) if enemy.target_entity is not None else None
+            if target_position is None:
+                enemy.target_entity = self._choose_target_entity(t.position, astronauts, seek_radius * 1.6)
+                if enemy.target_entity is not None:
+                    target_position = astronauts[enemy.target_entity]
+                    self._change_state(state, enemy, "seek_astronaut")
+
+            if target_position is not None:
+                offset = target_position - t.position
+                if offset.length() <= capture_distance:
+                    v.value.update(0.0, 0.0)
+                    self._change_state(state, enemy, "abducting")
+                    enemy.alerting = True
+                    continue
+
+                v.value.x = self._signed_speed(offset.x, patrol_speed)
+                if abs(offset.y) > 4.0:
+                    v.value.y = self._signed_speed(offset.y, vertical_speed)
                 else:
-                    v.value.y = -abduction_speed * 0.6
-                v.value.x = max(-patrol_speed, min(patrol_speed, v.value.x))
+                    v.value.y = 0.0
+                self._change_state(state, enemy, "seek_astronaut")
                 continue
 
-            if player_visible:
-                direction = 1.0 if player_pos.x > t.position.x else -1.0
-                v.value.x = direction * patrol_speed
-                state.name = "attack_player"
+            if player_visible and self.rng.random() < min(0.45 * dt, 0.08):
+                self._change_state(state, enemy, "attack_player")
+                v.value.x = self._signed_speed(player_pos.x - t.position.x, patrol_speed)
+                v.value.y = 0.0
                 continue
 
-            target = None
-            best_dist = 1e9
-            for a_ent, a_t in astronauts:
-                dist = abs(a_t.position.x - t.position.x)
-                if dist < best_dist and dist <= seek_radius:
-                    best_dist = dist
-                    target = a_t
+            if state.name == "attack_player" and player_visible:
+                v.value.x = self._signed_speed(player_pos.x - t.position.x, patrol_speed)
+                v.value.y = 0.0
+                if state.elapsed < 0.8:
+                    continue
 
-            if target is not None:
-                direction = 1.0 if target.position.x > t.position.x else -1.0
-                v.value.x = direction * (patrol_speed * 0.9)
-                if best_dist <= max(8.0, target.position.y - t.position.y) or best_dist < 10.0:
-                    state.name = "abducting"
-                    v.value.y = -abduction_speed
+            if abs(v.value.x) < 1.0 or state.elapsed > 1.8:
+                v.value.x = self.rng.choice((-1.0, 1.0)) * patrol_speed
+                if self.rng.random() < 0.4:
+                    v.value.y = self.rng.choice((-1.0, 1.0)) * vertical_speed * 0.4
                 else:
-                    state.name = "seek_astronaut"
-                continue
+                    v.value.y = 0.0
+                self._change_state(state, enemy, "patrol")
 
-            if abs(v.value.x) < 1.0:
-                v.value.x = random.choice((-1.0, 1.0)) * patrol_speed
-            if self.rng.random() < 0.01:
-                v.value.x *= -1.0
-            state.name = "patrol"
+    def _choose_target_entity(
+        self,
+        lander_position: pygame.Vector2,
+        astronauts: dict[int, pygame.Vector2],
+        max_distance: float,
+    ) -> int | None:
+        target_entity: int | None = None
+        best_distance = max_distance
+        for astronaut_entity, astronaut_position in astronauts.items():
+            distance = lander_position.distance_to(astronaut_position)
+            if distance < best_distance:
+                best_distance = distance
+                target_entity = astronaut_entity
+        return target_entity
+
+    def _change_state(self, state: State, enemy: Enemy, new_state: str) -> None:
+        if state.name != new_state:
+            state.name = new_state
+            state.elapsed = 0.0
+        enemy.state = state.name
+
+    def _signed_speed(self, distance: float, speed: float) -> float:
+        if abs(distance) < 0.5:
+            return 0.0
+        return speed if distance > 0 else -speed
