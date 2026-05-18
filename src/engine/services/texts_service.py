@@ -32,3 +32,13 @@ class TextsService:
             font = self.get_font(path, size)
             self._renders[key] = font.render(text, True, color)
         return self._renders[key]
+
+    def render_dynamic(
+        self,
+        path: str | None,
+        size: int,
+        text: str,
+        color: tuple[int, int, int],
+    ) -> pygame.Surface:
+        """Render without caching — use for text that changes color every frame."""
+        return self.get_font(path, size).render(text, True, color)

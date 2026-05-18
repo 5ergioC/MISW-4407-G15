@@ -10,4 +10,5 @@ class Animation:
     frame_time: float = 0.1
     elapsed: float = 0.0
     loop: bool = True
+    frame_count: int = 0
 

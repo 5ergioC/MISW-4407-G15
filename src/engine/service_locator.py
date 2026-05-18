@@ -20,3 +20,6 @@ class ServiceLocator:
         cls.images_service = ImagesService(root_path)
         cls.sounds_service = SoundsService(root_path)
         cls.texts_service = TextsService(root_path)
+        audio_cfg = cls.config.get("audio")
+        sfx_volume = audio_cfg.get("master_volume", 1.0) * audio_cfg.get("sfx_volume", 1.0)
+        cls.sounds_service.set_volume(sfx_volume)

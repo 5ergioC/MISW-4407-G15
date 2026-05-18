@@ -17,3 +17,5 @@ class Renderable:
     centered: bool = False
     flip_x: bool = False
     points: list[tuple[float, float]] = field(default_factory=list)
+    sprite_frame: int = 0
+    sprite_frame_width: int = 0

@@ -36,8 +36,20 @@ class RenderSystem:
                     for point in renderable.points
                 ]
                 pygame.draw.polygon(surface, renderable.color, points)
+            elif renderable.shape == "circle":
+                pygame.draw.circle(
+                    surface,
+                    renderable.color,
+                    (round(screen_x), screen_y),
+                    max(1, round(renderable.size.x)),
+                )
             elif renderable.shape == "image":
                 image = ServiceLocator.images_service.get(renderable.image_path)
+                if renderable.sprite_frame_width > 0:
+                    frame_w = renderable.sprite_frame_width
+                    frame_h = image.get_height()
+                    src = pygame.Rect(renderable.sprite_frame * frame_w, 0, frame_w, frame_h)
+                    image = image.subsurface(src)
                 if renderable.flip_x:
                     image = pygame.transform.flip(image, True, False)
                 rect = image.get_rect()
