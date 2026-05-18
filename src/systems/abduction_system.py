@@ -9,7 +9,7 @@ from src.components.tag import Tag
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_audio_event, create_mutant
+from src.factories.entity_factory import create_astronaut_death_fx, create_audio_event, create_mutant
 
 
 class AbductionSystem:
@@ -67,6 +67,7 @@ class AbductionSystem:
                 if enemy_transform.position.y <= top_escape_y:
                     if mutate_sound:
                         create_audio_event(world, mutate_sound)
+                    create_astronaut_death_fx(world, astronaut_transform.position.copy())
                     create_mutant(world)
                     world.delete_entity(astronaut_entity, immediate=True)
                     world.delete_entity(enemy_entity, immediate=True)

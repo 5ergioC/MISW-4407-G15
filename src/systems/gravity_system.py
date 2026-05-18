@@ -7,7 +7,7 @@ from src.components.tag import Tag
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_audio_event
+from src.factories.entity_factory import create_astronaut_death_fx, create_audio_event
 
 
 class GravitySystem:
@@ -44,6 +44,7 @@ class GravitySystem:
                 astronaut.state = "dead"
                 state.name = "dead"
                 renderable.visible = False
+                create_astronaut_death_fx(world, transform.position.copy())
                 fall_sound = self.audio_cfg["sounds"].get("astronaut_fall")
                 if fall_sound:
                     create_audio_event(world, fall_sound)

@@ -14,7 +14,7 @@ from src.components.state import State
 from src.components.tag import Tag
 from src.components.transform import Transform
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_enemy_death_fx, create_score_event
+from src.factories.entity_factory import create_astronaut_death_fx, create_enemy_death_fx, create_score_event
 
 
 class CollisionSystem:
@@ -96,6 +96,7 @@ class CollisionSystem:
                         continue
                     astronaut_component.state = "dead"
                     astronaut_renderable.visible = False
+                    create_astronaut_death_fx(world, astronaut_transform.position.copy())
                     astronauts_to_hide.add(astronaut_entity)
                     player_projectiles_to_delete.add(projectile_entity)
                     create_score_event(world, int(ServiceLocator.config.get("scoring").get("accidental_astronaut_kill", 0)))

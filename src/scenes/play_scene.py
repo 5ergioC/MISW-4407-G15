@@ -242,9 +242,13 @@ class PlayScene(Scene):
         for _, (_, _, player) in self.world.get_components(Transform, Velocity, Player):
             player.is_shooting = False
         enemy_count = 0
+        astronaut_count = 0
         for _, (tag,) in self.world.get_components(Tag):
             if tag.has("enemy"):
                 enemy_count += 1
+        for _, (astronaut, tag) in self.world.get_components(Astronaut, Tag):
+            if tag.has("astronaut") and astronaut.state != "dead":
+                astronaut_count += 1
         abduction_world_x = None
         for _, (transform, enemy, state, tag) in self.world.get_components(Transform, Enemy, State, Tag):
             if not tag.has("enemy") or enemy.kind != "lander":
@@ -259,6 +263,7 @@ class PlayScene(Scene):
             self.camera,
             self.planet_system.points,
             enemy_count,
+            astronaut_count,
             self.enemy_fire_disabled,
             abduction_world_x,
         )

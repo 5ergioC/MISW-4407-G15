@@ -242,6 +242,27 @@ def create_score_event(world, amount: int) -> int:
     return world.create_entity(ScoreValue(amount=amount), Tag("score_event"))
 
 
+def create_score_popup(world, position: pygame.Vector2, amount: int) -> int:
+    popup = world.create_entity()
+    world.add_component(popup, Transform(position.copy()))
+    world.add_component(popup, Velocity(pygame.Vector2(0.0, -18.0)))
+    world.add_component(
+        popup,
+        Renderable(
+            shape="text",
+            size=pygame.Vector2(8, 0),
+            color=pygame.Color(255, 240, 84),
+            layer=15,
+            text=str(amount),
+            centered=True,
+        ),
+    )
+    world.add_component(popup, Particle(kind="score_popup"))
+    world.add_component(popup, Lifetime(0.85))
+    world.add_component(popup, Tag("score_popup"))
+    return popup
+
+
 def _create_enemy_entity(
     world,
     *,
@@ -331,6 +352,36 @@ def create_enemy_death_fx(world, position: pygame.Vector2) -> None:
         world.add_component(fragment, Lifetime(random.uniform(0.12, 0.28)))
 
     return None
+
+
+def create_astronaut_death_fx(world, position: pygame.Vector2) -> None:
+    fragment_palette = [
+        pygame.Color(255, 231, 88),
+        pygame.Color(255, 97, 68),
+        pygame.Color(96, 162, 255),
+        pygame.Color(255, 255, 255),
+    ]
+    for index in range(7):
+        angle = index * (360 / 7) + random.uniform(-14, 14)
+        direction = pygame.Vector2(1, 0).rotate(angle)
+        speed = random.uniform(35.0, 105.0)
+        fragment = world.create_entity()
+        offset = direction * random.uniform(0.0, 4.0)
+        size = pygame.Vector2(random.uniform(2.0, 3.5), random.uniform(2.0, 3.5))
+        world.add_component(fragment, Transform(position.copy() + offset - size / 2))
+        world.add_component(fragment, Velocity(direction * speed))
+        world.add_component(
+            fragment,
+            Renderable(
+                shape="rect",
+                size=size,
+                color=random.choice(fragment_palette),
+                layer=11,
+                centered=True,
+            ),
+        )
+        world.add_component(fragment, Particle(kind="astronaut_death_fragment"))
+        world.add_component(fragment, Lifetime(random.uniform(0.14, 0.3)))
 
 
 def create_player_death_fx(world, position: pygame.Vector2) -> None:

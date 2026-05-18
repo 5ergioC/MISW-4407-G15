@@ -34,6 +34,7 @@ class HUDSystem:
         camera: Camera | None = None,
         planet_points: list[tuple[float, float]] | None = None,
         enemy_count: int = 0,
+        astronaut_count: int = 0,
         enemy_fire_disabled: bool = False,
         abduction_world_x: float | None = None,
     ) -> None:
@@ -47,7 +48,7 @@ class HUDSystem:
 
         self._render_smart_bombs(surface, int(shared_state.get("smart_bombs", 0)))
 
-        self._render_enemies(surface, font_path, enemy_count)
+        self._render_counts(surface, font_path, enemy_count, astronaut_count)
         if abduction_world_x is not None and camera is not None:
             self._render_abduction_arrow(surface, camera, abduction_world_x)
         if paused and pygame.time.get_ticks() // 250 % 2 == 0:
@@ -87,16 +88,21 @@ class HUDSystem:
             y = base_y + index * v_spacing
             surface.blit(icon, (base_x, y))
 
-    def _render_enemies(self, surface: pygame.Surface, font_path: str, enemies_count: int) -> None:
+    def _render_counts(self, surface: pygame.Surface, font_path: str, enemies_count: int, astronaut_count: int) -> None:
         label_color = (255, 255, 255)
         value_color = (255, 244, 72)
         enemies_label = ServiceLocator.texts_service.render(font_path, 8, "ENEMIES", label_color)
         enemies_value = ServiceLocator.texts_service.render(font_path, 8, str(enemies_count), value_color)
-        # align label to the right like the value
         label_rect = enemies_label.get_rect(topright=(312, 8))
         surface.blit(enemies_label, label_rect)
         value_rect = enemies_value.get_rect(topright=(312, 22))
         surface.blit(enemies_value, value_rect)
+        astronauts_label = ServiceLocator.texts_service.render(font_path, 8, "ASTR", label_color)
+        astronauts_value = ServiceLocator.texts_service.render(font_path, 8, str(astronaut_count), value_color)
+        astronauts_label_rect = astronauts_label.get_rect(topright=(276, 8))
+        surface.blit(astronauts_label, astronauts_label_rect)
+        astronauts_value_rect = astronauts_value.get_rect(topright=(276, 22))
+        surface.blit(astronauts_value, astronauts_value_rect)
 
     def _render_scanner(
         self,

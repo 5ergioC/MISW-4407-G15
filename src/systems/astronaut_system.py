@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import pygame
 
 from src.components.astronaut import Astronaut
 from src.components.player import Player
@@ -9,7 +10,7 @@ from src.components.tag import Tag
 from src.components.transform import Transform
 from src.components.velocity import Velocity
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_score_event
+from src.factories.entity_factory import create_score_event, create_score_popup
 
 
 class AstronautSystem:
@@ -60,6 +61,9 @@ class AstronautSystem:
                     astronaut.carrier_entity = player_entity
                     astronaut.rescued_from_fall = True
                     player_component.carried_astronaut = astronaut_entity
+                    rescue_score = int(score_cfg.get("astronaut_rescued_falling", 0))
+                    create_score_event(world, rescue_score)
+                    create_score_popup(world, player_transform.position + pygame.Vector2(0, -12), rescue_score)
                     transform.position.x = player_transform.position.x
                     transform.position.y = player_transform.position.y + carry_offset
                     state.name = "carried_by_player"
@@ -99,6 +103,7 @@ class AstronautSystem:
                     astronaut.deposited = True
                     rescue_score = int(score_cfg.get("astronaut_rescued_falling", 0)) if astronaut.rescued_from_fall else int(score_cfg.get("astronaut_deposited", 0))
                     create_score_event(world, rescue_score)
+                    create_score_popup(world, pygame.Vector2(player_transform.position.x, ground_y - 14), rescue_score)
                     astronaut.rescued_from_fall = False
                     astronaut.state = "walking"
                     astronaut.carrier_entity = None

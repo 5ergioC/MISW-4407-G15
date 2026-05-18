@@ -117,6 +117,21 @@ class RenderSystem:
                             surface.blit(flame, flame_rect)
 
                 surface.blit(image, rect)
+            elif renderable.shape == "text":
+                font_path = ServiceLocator.config.get("interface")["font"]["path"]
+                font_size = max(6, round(renderable.size.x))
+                text_surface = ServiceLocator.texts_service.render(
+                    font_path,
+                    font_size,
+                    renderable.text,
+                    (renderable.color.r, renderable.color.g, renderable.color.b),
+                )
+                rect = text_surface.get_rect()
+                if renderable.centered:
+                    rect.center = (round(screen_x), screen_y)
+                else:
+                    rect.topleft = (round(screen_x), screen_y)
+                surface.blit(text_surface, rect)
 
     def _draw_laser(self, surface: pygame.Surface, screen_x: int, screen_y: int, renderable: Renderable, velocity_x: float) -> None:
         beam_height = max(1, round(renderable.size.y))

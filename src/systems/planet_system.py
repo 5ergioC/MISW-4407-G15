@@ -28,24 +28,16 @@ class PlanetSystem:
         for _, (planet,) in world.get_components(Planet):
             if len(planet.points) < 2:
                 return
-            self._draw_planet_copy(surface, camera, planet, -camera.world_width)
-            self._draw_planet_copy(surface, camera, planet, 0.0)
-            self._draw_planet_copy(surface, camera, planet, camera.world_width)
+            repeated_points: list[tuple[float, float]] = []
+            for world_offset in (-camera.world_width, 0.0, camera.world_width):
+                for world_x, world_y in planet.points:
+                    repeated_points.append((world_x + world_offset - camera.x * planet.parallax, world_y - camera.y))
+            for index in range(1, len(repeated_points)):
+                previous = repeated_points[index - 1]
+                current = repeated_points[index]
+                if self._segment_visible(previous[0], current[0], camera.width):
+                    pygame.draw.line(surface, self.color, previous, current, 1)
             break
-
-    def _draw_planet_copy(
-        self,
-        surface: pygame.Surface,
-        camera: Camera,
-        planet: Planet,
-        world_offset: float,
-    ) -> None:
-        previous: tuple[float, float] | None = None
-        for world_x, world_y in planet.points:
-            screen_point = (world_x + world_offset - camera.x * planet.parallax, world_y - camera.y)
-            if previous is not None and self._segment_visible(previous[0], screen_point[0], camera.width):
-                pygame.draw.line(surface, self.color, previous, screen_point, 1)
-            previous = screen_point
 
     def _segment_visible(self, x1: float, x2: float, screen_width: float) -> bool:
         return max(x1, x2) >= -16 and min(x1, x2) <= screen_width + 16
