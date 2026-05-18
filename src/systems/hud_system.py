@@ -22,7 +22,7 @@ _SCORE_COLORS: list[tuple[int, int, int]] = [
 
 _SCANNER_RECT  = pygame.Rect(91, 0, 142, 44)
 _HUD_BOTTOM    = 42
-_SCAN_WINDOW   = 900
+_SCAN_WINDOW   = 2500
 _ENEMY_DOT_COLORS: dict[str, pygame.Color] = {
     "lander":  pygame.Color(52, 220, 52),
     "mutant":  pygame.Color(255, 80, 255),
@@ -182,7 +182,7 @@ class HUDSystem:
         # planet terrain — same Y mapping as player for accuracy
         if planet_points:
             half_w = inner.width // 2 + 2
-            surface.set_clip(scanner.inflate(-2, -2))
+            surface.set_clip(pygame.Rect(scanner.left + 3, scanner.top + 2, scanner.width - 6, scanner.height - 4))
             prev_pt = None
             for wx, wy in planet_points:
                 sx = world_to_scan(wx)
