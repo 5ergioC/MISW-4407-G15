@@ -224,6 +224,24 @@ Cobertura actual:
 - Flecha de rapto y contador visual resumido en HUD.
 - Ajustes recientes de UX: mundo horizontal mas corto y navegacion con wraparound real.
 
+## Verificacion contra rubrica y criterios
+
+Dentro del alcance de Persona 3, los puntos obligatorios de la rubrica quedan cubiertos por:
+
+- Spawn de Landers, Mutants y astronautas conectado a la escena principal.
+- Comportamiento autonomo de enemigos y astronautas usando ECS.
+- Rapto completo con ascenso y transformacion a Mutant.
+- Balas y misiles enemigos ocasionales.
+- Flecha de rapto y contador superior de enemigos/astronautas.
+- Particulas y efectos al morir enemigos y astronautas relacionados con este rol.
+- Wraparound del mundo aplicado a nave, enemigos y proyectiles, coordinado con Persona 1.
+
+Puntos que dependen del equipo completo y no solo de Persona 3:
+
+- Publicacion final, README grupal, video y tag.
+- Pausa completa, menu, Game Over, Win e integracion total.
+- Sonidos finales, assets definitivos y bonos.
+
 Validacion manual recomendada antes del merge final:
 
 - rescatar un astronauta cerca de los bordes del mundo

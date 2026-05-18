@@ -105,15 +105,13 @@ class AstronautSystem:
                     create_score_event(world, rescue_score)
                     create_score_popup(world, pygame.Vector2(player_transform.position.x, ground_y - 14), rescue_score)
                     astronaut.rescued_from_fall = False
-                    astronaut.state = "walking"
+                    astronaut.state = "deposited"
                     astronaut.carrier_entity = None
                     player_component.carried_astronaut = None
                     transform.position.y = ground_y
                     velocity.value.update(0.0, 0.0)
-                    state.name = "walking"
+                    state.name = "deposited"
                     state.elapsed = 0.0
-                    if abs(velocity.value.x) < 0.1:
-                        velocity.value.x = walk_speed
                 continue
 
             if astronaut.state == "deposited":

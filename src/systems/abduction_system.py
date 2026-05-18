@@ -27,7 +27,7 @@ class AbductionSystem:
         ):
             if enemy.kind != "lander" or not enemy_tag.has("enemy"):
                 continue
-            if enemy_state.name not in {"abducting", "ascending"}:
+            if enemy_state.name not in {"abducting", "ascending", "transform_to_mutant"}:
                 continue
 
             astronaut_entity = enemy.carried_entity or enemy.target_entity
@@ -47,6 +47,16 @@ class AbductionSystem:
             abduction_speed = float(lander_cfg.get("abduction_speed", 18.0))
             top_escape_y = float(lander_cfg.get("top_escape_y", 20.0))
 
+            if enemy_state.name == "transform_to_mutant":
+                enemy_velocity.value.update(0.0, 0.0)
+                if mutate_sound:
+                    create_audio_event(world, mutate_sound)
+                create_astronaut_death_fx(world, astronaut_transform.position.copy())
+                create_mutant(world)
+                world.delete_entity(astronaut_entity, immediate=True)
+                world.delete_entity(enemy_entity, immediate=True)
+                continue
+
             if astronaut.state == "walking" and enemy_state.name == "abducting":
                 astronaut.state = "captured"
                 astronaut_state.name = "captured"
@@ -65,9 +75,7 @@ class AbductionSystem:
                 astronaut_transform.position = enemy_transform.position + carry_offset
                 astronaut_velocity.value.update(0.0, 0.0)
                 if enemy_transform.position.y <= top_escape_y:
-                    if mutate_sound:
-                        create_audio_event(world, mutate_sound)
-                    create_astronaut_death_fx(world, astronaut_transform.position.copy())
-                    create_mutant(world)
-                    world.delete_entity(astronaut_entity, immediate=True)
-                    world.delete_entity(enemy_entity, immediate=True)
+                    enemy_velocity.value.update(0.0, 0.0)
+                    enemy_state.name = "transform_to_mutant"
+                    enemy_state.elapsed = 0.0
+                    enemy.state = "transform_to_mutant"
