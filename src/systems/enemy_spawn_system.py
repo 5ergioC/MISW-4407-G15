@@ -76,8 +76,12 @@ class EnemySpawnSystem:
 
         target_astronauts = max(0, int(wave.get("astronauts", 0)))
         current_astronauts = self._count_by_tag(world, "astronaut")
-        for _ in range(max(0, target_astronauts - current_astronauts)):
-            create_astronaut(world)
+        missing_astronauts = max(0, target_astronauts - current_astronauts)
+        if missing_astronauts > 0:
+            world_cfg = ServiceLocator.config.get("world")
+            spacing = world_cfg["width"] / (target_astronauts + 1)
+            for index in range(missing_astronauts):
+                create_astronaut(world, spacing * (current_astronauts + index + 1))
 
     def _spawn_enemy(self, world, wave: dict) -> None:
         available_types = [(count_key, spawn_fn, speed_multiplier_key) for count_key, _, spawn_fn, speed_multiplier_key in SPAWN_TYPES if self.remaining_counts[count_key] > 0]

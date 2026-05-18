@@ -505,7 +505,7 @@ def create_pod(world, speed_multiplier: float = 1.0) -> int:
     )
 
 
-def create_astronaut(world) -> int:
+def create_astronaut(world, spawn_x: float | None = None) -> int:
     world_cfg = ServiceLocator.config.get("world")
     astronaut_cfg = world_cfg.get("astronauts", {})
     ground_offset = int(astronaut_cfg.get("ground_offset", 6))
@@ -514,12 +514,14 @@ def create_astronaut(world) -> int:
     astronaut_frame_h = max(1, astronaut_sheet.get_height())
     render_size = pygame.Vector2(astronaut_frame_w, astronaut_frame_h)
 
-    spawn_x = random.uniform(0, world_cfg["width"])
+    if spawn_x is None:
+        spawn_x = random.uniform(0, world_cfg["width"])
     spawn_y = world_cfg["height"] - world_cfg["planet_height"] - ground_offset
 
     entity = world.create_entity()
     world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))
-    world.add_component(entity, Velocity(pygame.Vector2(0, 0)))
+    initial_direction = random.choice((-1.0, 1.0))
+    world.add_component(entity, Velocity(pygame.Vector2(initial_direction * float(astronaut_cfg.get("walk_speed", 8.0)), 0)))
     world.add_component(
         entity,
         Renderable(
