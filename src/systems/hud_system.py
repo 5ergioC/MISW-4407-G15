@@ -9,6 +9,7 @@ class HUDSystem:
     def __init__(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
         self.world_cfg = ServiceLocator.config.get("world")
+        self.hud_bottom = 42
         raw_lives_icon = ServiceLocator.images_service.get("img/interface_lives.png")
 
         scaled_size = (
@@ -25,6 +26,8 @@ class HUDSystem:
         )
         scaled_smart_bomb_icon = pygame.transform.smoothscale(raw_smart_bomb_icon, smart_bomb_size)
         self.smart_bomb_icon = scaled_smart_bomb_icon
+        self.enemy_icon = self._build_counter_icon("img/enemy_lander.png", frame_count=5, scale=0.65)
+        self.astronaut_icon = self._build_counter_icon("img/astronaut.png", frame_count=3, scale=0.95)
 
     def render(
         self,
@@ -89,20 +92,17 @@ class HUDSystem:
             surface.blit(icon, (base_x, y))
 
     def _render_counts(self, surface: pygame.Surface, font_path: str, enemies_count: int, astronaut_count: int) -> None:
-        label_color = (255, 255, 255)
         value_color = (255, 244, 72)
-        enemies_label = ServiceLocator.texts_service.render(font_path, 8, "ENEMIES", label_color)
         enemies_value = ServiceLocator.texts_service.render(font_path, 8, str(enemies_count), value_color)
-        label_rect = enemies_label.get_rect(topright=(312, 8))
-        surface.blit(enemies_label, label_rect)
-        value_rect = enemies_value.get_rect(topright=(312, 22))
-        surface.blit(enemies_value, value_rect)
-        astronauts_label = ServiceLocator.texts_service.render(font_path, 8, "ASTR", label_color)
         astronauts_value = ServiceLocator.texts_service.render(font_path, 8, str(astronaut_count), value_color)
-        astronauts_label_rect = astronauts_label.get_rect(topright=(276, 8))
-        surface.blit(astronauts_label, astronauts_label_rect)
-        astronauts_value_rect = astronauts_value.get_rect(topright=(276, 22))
-        surface.blit(astronauts_value, astronauts_value_rect)
+        enemy_row_y = 8
+        astronaut_row_y = 22
+        icon_x = 240
+        surface.blit(self.enemy_icon, (icon_x, enemy_row_y))
+        surface.blit(self.astronaut_icon, (icon_x + 1, astronaut_row_y))
+        value_x = 312
+        surface.blit(enemies_value, enemies_value.get_rect(topright=(value_x, enemy_row_y + 1)))
+        surface.blit(astronauts_value, astronauts_value.get_rect(topright=(value_x, astronaut_row_y + 1)))
 
     def _render_scanner(
         self,
@@ -112,11 +112,10 @@ class HUDSystem:
     ) -> None:
         green = pygame.Color(52, 174, 45)
         orange = pygame.Color(205, 106, 42)
-        hud_bottom = 42
-        scanner = pygame.Rect(90, 1, 144, hud_bottom - 2)
-        pygame.draw.line(surface, green, (0, hud_bottom), (320, hud_bottom), 2)
+        scanner = pygame.Rect(90, 1, 144, self.hud_bottom - 2)
+        pygame.draw.line(surface, green, (0, self.hud_bottom), (320, self.hud_bottom), 2)
         pygame.draw.rect(surface, green, scanner, 2)
-        pygame.draw.rect(surface, green, pygame.Rect(234, 1, 86, hud_bottom - 2), 2)
+        pygame.draw.rect(surface, green, pygame.Rect(234, 1, 86, self.hud_bottom - 2), 2)
         if camera is None or not planet_points:
             return
         scale_x = scanner.width / camera.world_width
@@ -153,3 +152,15 @@ class HUDSystem:
         else:
             points = [(312, center_y), (300, center_y - 6), (300, center_y + 6)]
         pygame.draw.polygon(surface, color, points)
+
+    def _build_counter_icon(self, image_path: str, frame_count: int, scale: float) -> pygame.Surface:
+        sheet = ServiceLocator.images_service.get(image_path)
+        frame_width = max(1, sheet.get_width() // max(1, frame_count))
+        frame = sheet.subsurface(pygame.Rect(0, 0, frame_width, sheet.get_height())).copy()
+        target_size = (
+            max(1, round(frame.get_width() * scale)),
+            max(1, round(frame.get_height() * scale)),
+        )
+        if frame.get_size() != target_size:
+            frame = pygame.transform.smoothscale(frame, target_size)
+        return frame

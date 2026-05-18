@@ -235,8 +235,12 @@ class PlayScene(Scene):
     def render(self) -> None:
         surface = self.virtual_screen
         self.background_system.render(surface)
+        gameplay_clip = pygame.Rect(0, self.hud_system.hud_bottom + 1, surface.get_width(), surface.get_height() - (self.hud_system.hud_bottom + 1))
+        previous_clip = surface.get_clip()
+        surface.set_clip(gameplay_clip)
         self.planet_system.render(self.world, surface, self.camera)
         self.render_system.render(self.world, surface, self.camera)
+        surface.set_clip(previous_clip)
 
         
         for _, (_, _, player) in self.world.get_components(Transform, Velocity, Player):
