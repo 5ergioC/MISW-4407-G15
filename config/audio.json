@@ -5,7 +5,9 @@
   "sounds": {
     "astronaut_fall": "snd/astronaut_fall.ogg",
     "enemy_die": "snd/enemy_die.ogg",
+    "enemy_shoot": "snd/player_shoot.ogg",
     "game_over": "snd/game_over.ogg",
+    "game_win": "snd/game_win.ogg",
     "game_paused": "snd/game_paused.ogg",
     "game_start": "snd/game_start.ogg",
     "lander_capture_astronaut": "snd/lander_capture_astronaut.ogg",

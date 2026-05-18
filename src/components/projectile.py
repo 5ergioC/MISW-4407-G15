@@ -11,3 +11,5 @@ class Projectile:
     direction: pygame.Vector2
     speed: float
     damage: int
+    kind: str = "bullet"
+    source_kind: str = ""

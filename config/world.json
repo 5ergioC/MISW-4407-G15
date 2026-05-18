@@ -34,6 +34,7 @@
     ]
   },
   "astronauts": {
+    "ground_y": 234,
     "ground_offset": 6,
     "walk_speed": 8.0,
     "safe_fall_height": 36,

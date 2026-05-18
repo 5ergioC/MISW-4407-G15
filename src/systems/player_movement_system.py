@@ -35,6 +35,18 @@ class PlayerMovementSystem:
         )
         burner_r.flip_x = player.facing < 0
 
+        # hide burner if player is dead/invisible
+        if world.has_component(player.burner_entity, Renderable):
+            pass  # already got burner_r above
+        player_entity_renderable = None
+        for ent, (pl,) in world.get_components(Player):
+            if pl is player and world.has_component(ent, Renderable):
+                player_entity_renderable = world.component_for_entity(ent, Renderable)
+                break
+        if player_entity_renderable is not None and not player_entity_renderable.visible:
+            burner_r.visible = False
+            return
+
         speed_sq = velocity.length_squared() if velocity is not None else 0.0
         moving = speed_sq > 4.0 or player.is_thrusting
 
@@ -43,7 +55,7 @@ class PlayerMovementSystem:
             return
 
         burner_r.visible = True
-        if player.is_boosting:
+        if player.is_thrusting:
             burner_r.image_path = "img/player_burner_moving.png"
             burner_r.sprite_frame_width = _BURNER_MOVE_FRAME_W
         else:
@@ -58,8 +70,7 @@ class PlayerMovementSystem:
 
     def update(self, world, dt: float) -> None:
         for entity, (transform, velocity, player) in world.get_components(Transform, Velocity, Player):
-            boost_mult = 1.8 if player.is_boosting else 1.0
-            velocity.value += player.thrust_input * player.thrust * boost_mult * dt
+            velocity.value += player.thrust_input * player.thrust * dt
             velocity.value *= player.drag ** (dt * 60.0)
             velocity.value.x = max(-player.max_speed_x, min(player.max_speed_x, velocity.value.x))
             velocity.value.y = max(-player.max_speed_y, min(player.max_speed_y, velocity.value.y))

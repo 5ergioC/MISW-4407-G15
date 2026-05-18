@@ -17,8 +17,14 @@ class Player:
     vertical_min: float
     vertical_max: float
     facing: float = 1.0
+    # P4 — burner visual
     burner_entity: int = -1
     is_thrusting: bool = False
     is_boosting: bool = False
     burner_frame: int = 0
     burner_timer: float = 0.0
+    # P3 — gameplay
+    thrust_anim_timer: float = 0.0
+    thrust_anim_frame: int = 0
+    is_shooting: bool = False
+    carried_astronaut: int | None = None

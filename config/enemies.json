@@ -1,6 +1,10 @@
 {
   "initial_landers": 0,
   "initial_mutants": 0,
+  "initial_bombers": 0,
+  "initial_baiters": 0,
+  "initial_swarmers": 0,
+  "initial_pods": 0,
   "lander": {
     "size": {
       "w": 10,
@@ -10,6 +14,8 @@
     "vertical_speed": 30.0,
     "abduction_speed": 18.0,
     "seek_radius": 90.0,
+    "capture_distance": 18.0,
+    "top_escape_y": 20.0,
     "fire_cooldown_min": 1.2,
     "fire_cooldown_max": 3.0,
     "score": 150
@@ -21,9 +27,62 @@
     },
     "speed": 70.0,
     "chase_acceleration": 100.0,
+    "vertical_chase_factor": 0.35,
     "fire_cooldown_min": 0.9,
     "fire_cooldown_max": 2.2,
     "score": 150
+  },
+  "bomber": {
+    "size": {
+      "w": 12,
+      "h": 10
+    },
+    "speed": 34.0,
+    "vertical_speed": 24.0,
+    "abduction_speed": 0.0,
+    "seek_radius": 110.0,
+    "fire_cooldown_min": 1.4,
+    "fire_cooldown_max": 3.4,
+    "score": 250
+  },
+  "baiter": {
+    "size": {
+      "w": 12,
+      "h": 10
+    },
+    "speed": 92.0,
+    "vertical_speed": 0.0,
+    "abduction_speed": 0.0,
+    "seek_radius": 150.0,
+    "fire_cooldown_min": 0.8,
+    "fire_cooldown_max": 1.8,
+    "score": 250
+  },
+  "swarmer": {
+    "size": {
+      "w": 10,
+      "h": 8
+    },
+    "speed": 78.0,
+    "vertical_speed": 0.0,
+    "abduction_speed": 0.0,
+    "seek_radius": 130.0,
+    "fire_cooldown_min": 0.7,
+    "fire_cooldown_max": 1.6,
+    "score": 125
+  },
+  "pod": {
+    "size": {
+      "w": 14,
+      "h": 12
+    },
+    "speed": 28.0,
+    "vertical_speed": 18.0,
+    "abduction_speed": 0.0,
+    "seek_radius": 80.0,
+    "fire_cooldown_min": 0.0,
+    "fire_cooldown_max": 0.0,
+    "score": 0
   },
   "bullet": {
     "size": {

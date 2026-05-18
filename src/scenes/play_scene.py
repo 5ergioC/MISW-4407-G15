@@ -2,26 +2,42 @@ from __future__ import annotations
 
 import pygame
 
-from src.components.camera import Camera
-from src.commands.bonus.smart_bomb_command import SmartBombCommand
 from src.commands.move_command import MoveCommand
-from src.commands.pause_command import PauseCommand
-from src.commands.scene_command import SceneCommand
-from src.commands.shoot_command import ShootCommand
+from src.components.camera import Camera
+from src.components.input_command import InputCommand, CommandPhase
 from src.core.scene import Scene
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_audio_event, create_planet, create_player, create_starfield
+from src.factories.entity_factory import (
+    create_audio_event,
+    create_input_commands,
+    create_player_death_fx,
+    create_planet,
+    create_player,
+    create_starfield,
+)
+from src.components.tag import Tag
+from src.components.player import Player
+from src.components.enemy import Enemy
+from src.components.astronaut import Astronaut
+from src.components.state import State
+from src.components.renderable import Renderable
+from src.components.transform import Transform
+from src.components.velocity import Velocity
 from src.systems.abduction_system import AbductionSystem
 from src.systems.animation_system import AnimationSystem
 from src.systems.astronaut_system import AstronautSystem
 from src.systems.audio_system import AudioSystem
 from src.systems.background_system import BackgroundSystem
+from src.systems.bonus.debug_system import DebugSystem
+from src.systems.bonus.reward_system import RewardSystem
+from src.systems.bonus.smart_bomb_system import SmartBombSystem
 from src.systems.camera_system import CameraSystem
 from src.systems.collision_system import CollisionSystem
 from src.systems.enemy_spawn_system import EnemySpawnSystem
+from src.systems.enemy_fire_system import EnemyFireSystem
 from src.systems.gravity_system import GravitySystem
 from src.systems.hud_system import HUDSystem
-from src.systems.input_command_system import InputCommandSystem
+from src.systems.input_command_system import system_input_command
 from src.systems.lander_ai_system import LanderAISystem
 from src.systems.lifetime_system import LifetimeSystem
 from src.systems.movement_system import MovementSystem
@@ -32,9 +48,6 @@ from src.systems.player_movement_system import PlayerMovementSystem
 from src.systems.planet_system import PlanetSystem
 from src.systems.projectile_system import ProjectileSystem
 from src.systems.render_system import RenderSystem
-from src.systems.bonus.debug_system import DebugSystem
-from src.systems.bonus.reward_system import RewardSystem
-from src.systems.bonus.smart_bomb_system import SmartBombSystem
 from src.systems.scoring_system import ScoringSystem
 from src.systems.shooting_system import ShootingSystem
 from src.systems.wraparound_system import WraparoundSystem
@@ -64,6 +77,7 @@ class PlayScene(Scene):
         self.audio_system = AudioSystem()
         self.camera_system = CameraSystem(self.camera)
         self.enemy_spawn_system = EnemySpawnSystem()
+        self.enemy_fire_system = EnemyFireSystem()
         self.lander_ai_system = LanderAISystem()
         self.mutant_ai_system = MutantAISystem()
         self.abduction_system = AbductionSystem()
@@ -82,33 +96,67 @@ class PlayScene(Scene):
         self.wraparound_system = WraparoundSystem()
         self.lifetime_system = LifetimeSystem()
         self.shooting_system = ShootingSystem()
+        self.player_respawn_delay = 1.4
+        self.player_respawn_timer = 0.0
+        self.player_dying = False
+        self.player_death_outcome: str | None = None
+        self._player_exploded = False
+        self._player_flash_timer = 0.0
+        self._player_flash_duration = 0.45
         self._create_world()
-        self.input_system = InputCommandSystem(
-            {
-                pygame.K_LEFT: MoveCommand(pygame.Vector2(-1, 0)),
-                pygame.K_a: MoveCommand(pygame.Vector2(-1, 0)),
-                pygame.K_RIGHT: MoveCommand(pygame.Vector2(1, 0)),
-                pygame.K_d: MoveCommand(pygame.Vector2(1, 0)),
-                pygame.K_UP: MoveCommand(pygame.Vector2(0, -1)),
-                pygame.K_w: MoveCommand(pygame.Vector2(0, -1)),
-                pygame.K_DOWN: MoveCommand(pygame.Vector2(0, 1)),
-                pygame.K_s: MoveCommand(pygame.Vector2(0, 1)),
-                pygame.K_SPACE: ShootCommand(self.shooting_system.fire),
-                pygame.K_b: SmartBombCommand(self._use_smart_bomb),
-                pygame.K_F1: PauseCommand(lambda: self.debug_system.toggle()),
-                pygame.K_p: PauseCommand(self._toggle_pause),
-                pygame.K_ESCAPE: SceneCommand(lambda: self.switch_to("menu")),
-            }
-        )
+        self.enemy_fire_disabled = not self.enemy_fire_system.enabled
 
     def _create_world(self) -> None:
         create_starfield(self.world)
         create_planet(self.world)
         create_player(self.world)
+        create_input_commands(self.world)
         create_audio_event(self.world, "snd/game_start.ogg")
 
-    def _use_smart_bomb(self, world) -> None:
-        self.smart_bomb_system.activate(world, self.camera, self.engine.shared_state)
+    def _reset_run_after_player_death(self) -> None:
+        self.world.clear_database()
+        self.enemy_spawn_system.reset()
+        self.player_respawn_timer = 0.0
+        self.player_dying = False
+        self.player_death_outcome = None
+        self._player_exploded = False
+        self._player_flash_timer = 0.0
+        self._create_world()
+
+    def _on_player_enemy_collision(self, player_position: pygame.Vector2) -> None:
+        if self.player_dying:
+            return
+        lives = max(0, int(self.engine.shared_state["lives"]) - 1)
+        self.engine.shared_state["lives"] = lives
+        self.player_death_outcome = "respawn" if lives > 0 else "game_over"
+        self.player_dying = True
+        self.player_respawn_timer = self.player_respawn_delay
+        self._player_exploded = False
+        self._player_flash_timer = 0.0
+        ServiceLocator.sounds_service.play(ServiceLocator.config.get("audio")["sounds"]["player_die"])
+        for _, (_, velocity, player, renderable) in self.world.get_components(Transform, Velocity, Player, Renderable):
+            velocity.value = pygame.Vector2(0, 0)
+            renderable.color = pygame.Color(255, 50, 50)
+
+    def _update_player_death_flash(self, dt: float) -> None:
+        self._player_flash_timer += dt
+        blink_on = int(self._player_flash_timer / 0.06) % 2 == 0
+        for _, (transform, _, player, renderable) in self.world.get_components(Transform, Velocity, Player, Renderable):
+            if not self._player_exploded:
+                renderable.visible = blink_on
+                renderable.color = pygame.Color(255, 50, 50) if blink_on else pygame.Color(255, 180, 180)
+            if self._player_flash_timer >= self._player_flash_duration and not self._player_exploded:
+                self._player_exploded = True
+                renderable.visible = False
+                from src.factories.entity_factory import create_explosion
+                create_explosion(self.world, transform.position.copy(), kind="player", count=22, speed_min=25, speed_max=80)
+
+    def _finish_player_respawn(self) -> None:
+        if self.player_death_outcome == "game_over":
+            self.engine.shared_state["game_over_reason"] = "No lives left"
+            self.switch_to("game_over")
+            return
+        self._reset_run_after_player_death()
 
     def _toggle_pause(self) -> None:
         if self.state == GameState.PLAYING:
@@ -118,27 +166,82 @@ class PlayScene(Scene):
             self.state = GameState.PLAYING
             self.pause_visibility_system.set_paused(self.world, False)
 
+    def _use_smart_bomb(self) -> None:
+        self.smart_bomb_system.activate(self.world, self.camera, self.engine.shared_state)
+
     def _set_boost(self, active: bool) -> None:
-        from src.components.player import Player
         for _, (player,) in self.world.get_components(Player):
             player.is_boosting = active
-            if active:
-                player.thrust_input = player.thrust_input  # keep current
+
+    def _do_action(self, c_input: InputCommand) -> None:
+        move_commands = {
+            "PLAYER_LEFT":  MoveCommand(pygame.Vector2(-1, 0)),
+            "PLAYER_RIGHT": MoveCommand(pygame.Vector2(1, 0)),
+            "PLAYER_UP":    MoveCommand(pygame.Vector2(0, -1)),
+            "PLAYER_DOWN":  MoveCommand(pygame.Vector2(0, 1)),
+        }
+
+        if c_input.name in move_commands:
+            move_commands[c_input.name].execute_with_phase(self.world, c_input)
+
+        elif c_input.name == "PLAYER_FIRE":
+            if c_input.phase == CommandPhase.START:
+                self.shooting_system.fire(self.world)
+
+        elif c_input.name == "PLAYER_PAUSE":
+            if c_input.phase == CommandPhase.START:
+                self._toggle_pause()
+
+        elif c_input.name == "PLAYER_SMART_BOMB":
+            if c_input.phase == CommandPhase.START:
+                self._use_smart_bomb()
+
+        elif c_input.name == "TOGGLE_ENEMY_FIRE":
+            if c_input.phase == CommandPhase.START:
+                self.enemy_fire_system.enabled = not getattr(self.enemy_fire_system, "enabled", True)
+                self.enemy_fire_disabled = not self.enemy_fire_system.enabled
+
+        elif c_input.name == "PLAYER_LOSE_LIFE":
+            if c_input.phase == CommandPhase.START:
+                lives = int(self.engine.shared_state["lives"])
+                self.engine.shared_state["lives"] = max(0, lives - 1)
+                if self.engine.shared_state["lives"] <= 0:
+                    self.engine.shared_state["game_over_reason"] = "No lives left"
+                    self.switch_to("game_over")
+
+        elif c_input.name == "PLAYER_WIN":
+            if c_input.phase == CommandPhase.START:
+                self.engine.reset_run_state()
+                self.switch_to("win")
+
+        elif c_input.name == "PLAYER_MENU":
+            if c_input.phase == CommandPhase.START:
+                self.switch_to("menu")
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.KEYDOWN and event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
-            self._set_boost(True)
-        elif event.type == pygame.KEYUP and event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
-            self._set_boost(False)
-        self.input_system.process_event(self.world, event)
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
+            self.debug_system.toggle()
+        system_input_command(self.world, event, self._do_action)
 
     def update(self, dt: float) -> None:
         if self.state == GameState.PAUSED:
             return
+        if self.player_dying:
+            self.player_respawn_timer -= dt
+            self._update_player_death_flash(dt)
+            self.particle_system.update(self.world, dt)
+            self.animation_system.update(self.world, dt)
+            self.lifetime_system.update(self.world, dt)
+            self.audio_system.update(self.world, dt)
+            if self.player_respawn_timer <= 0.0:
+                self._finish_player_respawn()
+            return
         self.shooting_system.update(dt)
         self.enemy_spawn_system.update(self.world, dt)
+        self.enemy_fire_system.set_wave_context(self.enemy_spawn_system.current_wave())
         self.lander_ai_system.update(self.world, dt)
         self.mutant_ai_system.update(self.world, dt)
+        self.enemy_fire_system.update(self.world, dt, self.camera)
         self.abduction_system.update(self.world, dt)
         self.astronaut_system.update(self.world, dt)
         self.gravity_system.update(self.world, dt)
@@ -146,7 +249,7 @@ class PlayScene(Scene):
         self.velocity_system.update(self.world, dt)
         self.projectile_system.update(self.world, dt)
         self.wraparound_system.update(self.world, dt)
-        self.collision_system.update(self.world, dt)
+        self.collision_system.update(self.world, dt, self.camera, self._on_player_enemy_collision)
         self.particle_system.update(self.world, dt)
         self.animation_system.update(self.world, dt)
         self.planet_system.update(self.world, dt)
@@ -155,12 +258,40 @@ class PlayScene(Scene):
         self.reward_system.update(self.world, self.engine.shared_state)
         self.lifetime_system.update(self.world, dt)
         self.audio_system.update(self.world, dt)
+        self._evaluate_run_outcome()
 
     def render(self) -> None:
         surface = self.virtual_screen
         self.background_system.render(surface)
+        gameplay_clip = pygame.Rect(
+            0,
+            self.hud_system.hud_bottom + 1,
+            surface.get_width(),
+            surface.get_height() - (self.hud_system.hud_bottom + 1),
+        )
+        previous_clip = surface.get_clip()
+        surface.set_clip(gameplay_clip)
         self.planet_system.render(self.world, surface, self.camera)
         self.render_system.render(self.world, surface, self.camera)
+        surface.set_clip(previous_clip)
+
+        for _, (_, _, player) in self.world.get_components(Transform, Velocity, Player):
+            player.is_shooting = False
+
+        enemy_count = sum(1 for _, (tag,) in self.world.get_components(Tag) if tag.has("enemy"))
+        astronaut_count = sum(
+            1 for _, (astronaut, tag) in self.world.get_components(Astronaut, Tag)
+            if tag.has("astronaut") and astronaut.state != "dead"
+        )
+
+        abduction_world_x = None
+        for _, (transform, enemy, state, tag) in self.world.get_components(Transform, Enemy, State, Tag):
+            if not tag.has("enemy") or enemy.kind != "lander":
+                continue
+            if state.name in {"abducting", "ascending"} or enemy.alerting:
+                abduction_world_x = transform.position.x
+                break
+
         self.hud_system.render(
             surface,
             self.engine.shared_state,
@@ -168,5 +299,21 @@ class PlayScene(Scene):
             self.camera,
             self.planet_system.points,
             self.world,
+            enemy_count,
+            astronaut_count,
+            self.enemy_fire_disabled,
+            abduction_world_x,
         )
         self.debug_system.render(self.world, surface, self.camera)
+
+    def _evaluate_run_outcome(self) -> None:
+        live_astronauts = 0
+        for _, (astronaut, tag) in self.world.get_components(Astronaut, Tag):
+            if tag.has("astronaut") and astronaut.state != "dead":
+                live_astronauts += 1
+        if live_astronauts <= 0:
+            self.engine.shared_state["game_over_reason"] = "All astronauts lost"
+            self.switch_to("game_over")
+            return
+        if self.enemy_spawn_system.is_campaign_complete(self.world):
+            self.switch_to("win")
