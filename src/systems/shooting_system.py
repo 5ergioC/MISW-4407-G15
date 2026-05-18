@@ -5,7 +5,7 @@ import pygame
 from src.components.player import Player
 from src.components.transform import Transform
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_laser
+from src.factories.entity_factory import create_audio_event, create_laser
 
 
 class ShootingSystem:
@@ -22,5 +22,6 @@ class ShootingSystem:
         for _, (transform, player) in world.get_components(Transform, Player):
             offset = pygame.Vector2(8 * player.facing, 0)
             create_laser(world, transform.position + offset, player.facing)
+            create_audio_event(world, "snd/player_shoot.ogg")
             self.cooldown = self.player_cfg["fire_cooldown"]
             break

@@ -32,6 +32,8 @@ from src.systems.player_movement_system import PlayerMovementSystem
 from src.systems.planet_system import PlanetSystem
 from src.systems.projectile_system import ProjectileSystem
 from src.systems.render_system import RenderSystem
+from src.systems.bonus.debug_system import DebugSystem
+from src.systems.bonus.reward_system import RewardSystem
 from src.systems.bonus.smart_bomb_system import SmartBombSystem
 from src.systems.scoring_system import ScoringSystem
 from src.systems.shooting_system import ShootingSystem
@@ -71,6 +73,8 @@ class PlayScene(Scene):
         self.collision_system = CollisionSystem()
         self.particle_system = ParticleSystem()
         self.smart_bomb_system = SmartBombSystem()
+        self.debug_system = DebugSystem()
+        self.reward_system = RewardSystem()
         self.scoring_system = ScoringSystem()
         self.pause_visibility_system = PauseVisibilitySystem()
         self.movement_system = PlayerMovementSystem()
@@ -91,6 +95,7 @@ class PlayScene(Scene):
                 pygame.K_s: MoveCommand(pygame.Vector2(0, 1)),
                 pygame.K_SPACE: ShootCommand(self.shooting_system.fire),
                 pygame.K_b: SmartBombCommand(self._use_smart_bomb),
+                pygame.K_F1: PauseCommand(lambda: self.debug_system.toggle()),
                 pygame.K_p: PauseCommand(self._toggle_pause),
                 pygame.K_ESCAPE: SceneCommand(lambda: self.switch_to("menu")),
             }
@@ -113,7 +118,18 @@ class PlayScene(Scene):
             self.state = GameState.PLAYING
             self.pause_visibility_system.set_paused(self.world, False)
 
+    def _set_boost(self, active: bool) -> None:
+        from src.components.player import Player
+        for _, (player,) in self.world.get_components(Player):
+            player.is_boosting = active
+            if active:
+                player.thrust_input = player.thrust_input  # keep current
+
     def handle_event(self, event: pygame.event.Event) -> None:
+        if event.type == pygame.KEYDOWN and event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
+            self._set_boost(True)
+        elif event.type == pygame.KEYUP and event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
+            self._set_boost(False)
         self.input_system.process_event(self.world, event)
 
     def update(self, dt: float) -> None:
@@ -136,6 +152,7 @@ class PlayScene(Scene):
         self.planet_system.update(self.world, dt)
         self.camera_system.update(self.world, dt)
         self.scoring_system.update(self.world, self.engine.shared_state)
+        self.reward_system.update(self.world, self.engine.shared_state)
         self.lifetime_system.update(self.world, dt)
         self.audio_system.update(self.world, dt)
 
@@ -152,3 +169,4 @@ class PlayScene(Scene):
             self.planet_system.points,
             self.world,
         )
+        self.debug_system.render(self.world, surface, self.camera)

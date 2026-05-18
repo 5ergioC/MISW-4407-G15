@@ -5,6 +5,7 @@ from pathlib import Path
 import pygame
 
 from src.engine.service_locator import ServiceLocator
+from src.scenes.bonus.attract_scene import AttractScene
 from src.scenes.bonus.high_score_scene import HighScoreScene
 from src.scenes.game_over_scene import GameOverScene
 from src.scenes.menu_scene import MenuScene
@@ -18,7 +19,9 @@ class GameEngine:
         ServiceLocator.bootstrap(self.root_path)
 
         self.window_config = ServiceLocator.config.get("window")
+        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=512)
         pygame.init()
+        pygame.mixer.init()
         pygame.display.set_caption(self.window_config["title"])
 
         size = self.window_config["size"]
@@ -38,6 +41,8 @@ class GameEngine:
             "score": 0,
             "lives": player_cfg["lives"],
             "smart_bombs": player_cfg.get("smart_bombs", 3),
+            "_last_reward_milestone": 0,
+            "wave": 0,
             "level_complete": False,
             "game_over_reason": "",
         }
@@ -47,6 +52,7 @@ class GameEngine:
             "game_over": GameOverScene(self),
             "win": WinScene(self),
             "high_score": HighScoreScene(self),
+            "attract": AttractScene(self),
         }
         self.current_scene = self.scenes["menu"]
 
@@ -55,6 +61,8 @@ class GameEngine:
         self.shared_state["score"] = 0
         self.shared_state["lives"] = player_cfg["lives"]
         self.shared_state["smart_bombs"] = player_cfg.get("smart_bombs", 3)
+        self.shared_state["_last_reward_milestone"] = 0
+        self.shared_state["wave"] = 0
         self.shared_state["level_complete"] = False
         self.shared_state["game_over_reason"] = ""
 
