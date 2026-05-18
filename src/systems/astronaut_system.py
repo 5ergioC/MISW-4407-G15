@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 
 from src.components.astronaut import Astronaut
+from src.components.player import Player
 from src.components.state import State
 from src.components.tag import Tag
 from src.components.transform import Transform
@@ -19,8 +20,18 @@ class AstronautSystem:
         astronaut_cfg = self.world_cfg.get("astronauts", {})
         ground_y = self.world_cfg["height"] - self.world_cfg["planet_height"] - int(astronaut_cfg.get("ground_offset", 6))
         walk_speed = float(astronaut_cfg.get("walk_speed", 8.0))
+        rescue_distance = 14.0
+        carry_offset = 12.0
 
-        for _, (transform, velocity, astronaut, state, tag) in world.get_components(Transform, Velocity, Astronaut, State, Tag):
+        player_data = list(world.get_components(Transform, Velocity, Player))
+        player_entity = None
+        player_transform = None
+        player_velocity = None
+        player_component = None
+        if player_data:
+            player_entity, (player_transform, player_velocity, player_component) = player_data[0]
+
+        for astronaut_entity, (transform, velocity, astronaut, state, tag) in world.get_components(Transform, Velocity, Astronaut, State, Tag):
             if not tag.has("astronaut"):
                 continue
 
@@ -35,9 +46,59 @@ class AstronautSystem:
                 state.elapsed += dt
                 continue
 
-            if astronaut.state in {"captured", "falling", "carried_by_player"}:
-                state.name = astronaut.state
+            if astronaut.state == "falling":
+                if (
+                    player_entity is not None
+                    and player_component is not None
+                    and player_component.carried_astronaut is None
+                    and player_transform is not None
+                    and player_transform.position.distance_to(transform.position) <= rescue_distance
+                ):
+                    astronaut.state = "carried_by_player"
+                    astronaut.carrier_entity = player_entity
+                    astronaut.rescued_from_fall = True
+                    player_component.carried_astronaut = astronaut_entity
+                    state.name = "carried_by_player"
+                    state.elapsed = 0.0
+                    velocity.value.update(0.0, 0.0)
+                    continue
+
+                state.name = "falling"
                 state.elapsed += dt
+                continue
+
+            if astronaut.state == "captured":
+                state.name = "captured"
+                state.elapsed += dt
+                continue
+
+            if astronaut.state == "carried_by_player":
+                if (
+                    player_entity is None
+                    or player_component is None
+                    or player_transform is None
+                    or player_component.carried_astronaut != astronaut_entity
+                ):
+                    astronaut.state = "falling"
+                    astronaut.carrier_entity = None
+                    astronaut.fall_start_y = transform.position.y
+                    state.name = "falling"
+                    state.elapsed = 0.0
+                    continue
+
+                transform.position.x = player_transform.position.x
+                transform.position.y = player_transform.position.y + carry_offset
+                velocity.value.update(0.0, 0.0)
+                state.name = "carried_by_player"
+                state.elapsed += dt
+                if player_transform.position.y >= ground_y - 18 and abs(player_velocity.value.y) < 40.0:
+                    astronaut.state = "deposited"
+                    astronaut.carrier_entity = None
+                    player_component.carried_astronaut = None
+                    transform.position.y = ground_y
+                    velocity.value.update(0.0, 0.0)
+                    state.name = "deposited"
+                    state.elapsed = 0.0
                 continue
 
             if astronaut.state == "deposited":

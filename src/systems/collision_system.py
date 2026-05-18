@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import pygame
 
+from src.components.astronaut import Astronaut
 from src.components.collider import Collider
 from src.components.camera import Camera
+from src.components.enemy import Enemy
 from src.components.player import Player
 from src.components.projectile import Projectile
 from src.components.renderable import Renderable
+from src.components.state import State
 from src.components.tag import Tag
 from src.components.transform import Transform
 from src.engine.service_locator import ServiceLocator
@@ -21,8 +24,10 @@ class CollisionSystem:
         projectiles = list(world.get_components(Transform, Collider, Projectile, Renderable))
         enemies = list(world.get_components(Transform, Collider, Renderable, Tag))
         enemy_projectiles = list(world.get_components(Transform, Collider, Projectile, Renderable))
+        astronauts = list(world.get_components(Transform, Collider, Astronaut, Renderable, Tag))
         if enemies and projectiles:
             enemies_to_delete: set[int] = set()
+            player_projectiles_to_delete: set[int] = set()
             enemy_death_sound = ServiceLocator.config.get("audio")["sounds"].get("enemy_die")
             for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in projectiles:
                 if projectile_component.owner != "player":
@@ -37,12 +42,59 @@ class CollisionSystem:
                     if not projectile_rect.colliderect(enemy_rect):
                         continue
                     enemies_to_delete.add(enemy_entity)
+                    player_projectiles_to_delete.add(projectile_entity)
+                    self._release_carried_astronaut(world, enemy_entity)
                     create_enemy_death_fx(world, pygame.Vector2(enemy_rect.centerx, enemy_rect.centery))
                     if enemy_death_sound:
                         ServiceLocator.sounds_service.play(enemy_death_sound)
 
             for enemy_entity in enemies_to_delete:
                 world.delete_entity(enemy_entity, immediate=True)
+            for projectile_entity in player_projectiles_to_delete:
+                world.delete_entity(projectile_entity, immediate=True)
+
+        if enemy_projectiles and projectiles:
+            enemy_projectiles_to_delete: set[int] = set()
+            player_projectiles_to_delete: set[int] = set()
+            for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in projectiles:
+                if projectile_component.owner != "player":
+                    continue
+                projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
+                for enemy_projectile_entity, (enemy_projectile_transform, enemy_projectile_collider, enemy_projectile_component, enemy_projectile_renderable) in enemy_projectiles:
+                    if enemy_projectile_component.owner != "enemy":
+                        continue
+                    enemy_projectile_rect = self._build_rect(enemy_projectile_transform, enemy_projectile_collider, enemy_projectile_renderable)
+                    if not projectile_rect.colliderect(enemy_projectile_rect):
+                        continue
+                    enemy_projectiles_to_delete.add(enemy_projectile_entity)
+                    player_projectiles_to_delete.add(projectile_entity)
+            for entity in enemy_projectiles_to_delete:
+                world.delete_entity(entity, immediate=True)
+            for entity in player_projectiles_to_delete:
+                world.delete_entity(entity, immediate=True)
+
+        if astronauts and projectiles:
+            astronauts_to_hide: set[int] = set()
+            player_projectiles_to_delete: set[int] = set()
+            for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in projectiles:
+                if projectile_component.owner != "player":
+                    continue
+                projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
+                for astronaut_entity, (astronaut_transform, astronaut_collider, astronaut_component, astronaut_renderable, astronaut_tag) in astronauts:
+                    if not astronaut_tag.has("astronaut") or astronaut_component.state == "dead":
+                        continue
+                    astronaut_rect = self._build_rect(astronaut_transform, astronaut_collider, astronaut_renderable)
+                    if not projectile_rect.colliderect(astronaut_rect):
+                        continue
+                    astronaut_component.state = "dead"
+                    astronaut_renderable.visible = False
+                    astronauts_to_hide.add(astronaut_entity)
+                    player_projectiles_to_delete.add(projectile_entity)
+            for astronaut_entity in astronauts_to_hide:
+                if world.has_component(astronaut_entity, State):
+                    world.component_for_entity(astronaut_entity, State).name = "dead"
+            for projectile_entity in player_projectiles_to_delete:
+                world.delete_entity(projectile_entity, immediate=True)
 
         if players and enemy_projectiles:
             enemy_projectiles_to_delete: set[int] = set()
@@ -110,3 +162,22 @@ class CollisionSystem:
     def _world_to_screen_x(self, x: float, camera: Camera) -> float:
         world_width = camera.world_width
         return (x - camera.x + world_width / 2) % world_width - world_width / 2
+
+    def _release_carried_astronaut(self, world, enemy_entity: int) -> None:
+        if not world.has_component(enemy_entity, Enemy):
+            return
+        enemy = world.component_for_entity(enemy_entity, Enemy)
+        astronaut_entity = enemy.carried_entity
+        if astronaut_entity is None or not world.has_component(astronaut_entity, Astronaut):
+            return
+
+        astronaut = world.component_for_entity(astronaut_entity, Astronaut)
+        astronaut.state = "falling"
+        astronaut.carrier_entity = None
+        astronaut.fall_start_y = world.component_for_entity(astronaut_entity, Transform).position.y
+        if world.has_component(astronaut_entity, State):
+            astronaut_state = world.component_for_entity(astronaut_entity, State)
+            astronaut_state.name = "falling"
+            astronaut_state.elapsed = 0.0
+        if world.has_component(astronaut_entity, Renderable):
+            world.component_for_entity(astronaut_entity, Renderable).visible = True
