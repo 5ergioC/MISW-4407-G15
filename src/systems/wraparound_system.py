@@ -7,10 +7,9 @@ class WraparoundSystem:
         del dt
         for _, (transform, wraparound) in world.get_components(Transform, Wraparound):
             if wraparound.horizontal:
-                if transform.position.x < -wraparound.margin:
-                    transform.position.x = wraparound.world_width + wraparound.margin
-                elif transform.position.x > wraparound.world_width + wraparound.margin:
-                    transform.position.x = -wraparound.margin
+                world_width = float(wraparound.world_width)
+                if world_width > 0:
+                    transform.position.x %= world_width
             if wraparound.vertical and wraparound.world_height is not None:
                 if transform.position.y < -wraparound.margin:
                     transform.position.y = wraparound.world_height + wraparound.margin
