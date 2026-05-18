@@ -18,7 +18,7 @@ class GravitySystem:
     def update(self, world, dt: float) -> None:
         astronaut_cfg = self.world_cfg.get("astronauts", {})
         gravity = float(astronaut_cfg.get("gravity", 65.0))
-        ground_y = self.world_cfg["height"] - self.world_cfg["planet_height"] - int(astronaut_cfg.get("ground_offset", 6))
+        ground_y = float(astronaut_cfg.get("ground_y", self.world_cfg["height"] - self.world_cfg["planet_height"] - int(astronaut_cfg.get("ground_offset", 6))))
         safe_fall_height = float(astronaut_cfg.get("safe_fall_height", 36.0))
 
         for _, (transform, velocity, astronaut, state, renderable, tag) in world.get_components(

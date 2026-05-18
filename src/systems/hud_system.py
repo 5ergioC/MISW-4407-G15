@@ -8,6 +8,7 @@ from src.engine.service_locator import ServiceLocator
 class HUDSystem:
     def __init__(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
+        self.world_cfg = ServiceLocator.config.get("world")
         raw_lives_icon = ServiceLocator.images_service.get("img/interface_lives.png")
 
         scaled_size = (
@@ -113,13 +114,12 @@ class HUDSystem:
         if camera is None or not planet_points:
             return
         scale_x = scanner.width / camera.world_width
-        min_y = min(y for _, y in planet_points)
-        max_y = max(y for _, y in planet_points)
-        height = max(1.0, max_y - min_y)
+        world_height = float(self.world_cfg["height"])
         scaled_points = []
         for world_x, world_y in planet_points:
             x = scanner.left + world_x * scale_x
-            y = scanner.bottom - 4 - ((max_y - world_y) / height) * (scanner.height - 10)
+            relative_height = max(0.0, min(world_height, world_height - world_y))
+            y = scanner.bottom - 3 - (relative_height / world_height) * (scanner.height - 8)
             if scanner.left <= x <= scanner.right:
                 scaled_points.append((x, y))
         if len(scaled_points) > 1:

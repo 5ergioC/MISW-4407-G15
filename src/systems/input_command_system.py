@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Callable
 
-import pygame
 import esper
+import pygame
 
-from src.components.input_command import InputCommand, CommandPhase
+from src.components.input_command import CommandPhase, InputCommand
 
 
 class InputCommandSystem:
@@ -21,24 +21,26 @@ class InputCommandSystem:
         command.execute(world, event.type == pygame.KEYDOWN)
 
 
-def system_input_command(world: esper.World,
-                          event: pygame.event.Event,
-                          do_action: Callable[[InputCommand], None]) -> None:
-    
+def system_input_command(
+    world: esper.World,
+    event: pygame.event.Event,
+    do_action: Callable[[InputCommand], None],
+) -> None:
     if event.type not in (pygame.KEYDOWN, pygame.KEYUP):
         return
 
     components = world.get_components(InputCommand)
-
     for _, (c_input,) in components:
-        if c_input.key == event.key:
-            # Actualizar fase según el tipo de evento
-            if event.type == pygame.KEYDOWN:
-                c_input.phase = CommandPhase.START
-                c_input.active = True
-            elif event.type == pygame.KEYUP:
-                c_input.phase = CommandPhase.END
-                c_input.active = False
+        if c_input.key != event.key:
+            continue
 
-            # Ejecutar la acción con la nueva fase
-            do_action(c_input)
+        if event.type == pygame.KEYDOWN:
+            if c_input.active:
+                return
+            c_input.phase = CommandPhase.START
+            c_input.active = True
+        else:
+            c_input.phase = CommandPhase.END
+            c_input.active = False
+
+        do_action(c_input)

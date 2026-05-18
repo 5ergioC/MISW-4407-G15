@@ -32,6 +32,13 @@ from src.engine.service_locator import ServiceLocator
 def create_player(world) -> int:
     player_cfg = ServiceLocator.config.get("player")
     world_cfg = ServiceLocator.config.get("world")
+    astronaut_cfg = world_cfg.get("astronauts", {})
+    ground_y = float(
+        astronaut_cfg.get(
+            "ground_y",
+            world_cfg["height"] - world_cfg["planet_height"] - int(astronaut_cfg.get("ground_offset", 6)),
+        )
+    )
     entity = world.create_entity()
     spawn = player_cfg["spawn"]
     size = player_cfg["size"]
@@ -61,7 +68,7 @@ def create_player(world) -> int:
             max_speed_x=player_cfg["max_speed_x"],
             max_speed_y=player_cfg["max_speed_y"],
             vertical_min=player_cfg["vertical_margin_top"],
-            vertical_max=world_cfg["height"] - player_cfg["vertical_margin_bottom"],
+            vertical_max=ground_y,
         ),
     )
     world.add_component(entity, Wraparound(world_width=world_cfg["width"], margin=12))
@@ -561,7 +568,7 @@ def create_pod(world, speed_multiplier: float = 1.0) -> int:
 def create_astronaut(world, spawn_x: float | None = None) -> int:
     world_cfg = ServiceLocator.config.get("world")
     astronaut_cfg = world_cfg.get("astronauts", {})
-    ground_offset = int(astronaut_cfg.get("ground_offset", 6))
+    ground_y = float(astronaut_cfg.get("ground_y", world_cfg["height"] - world_cfg["planet_height"] - int(astronaut_cfg.get("ground_offset", 6))))
     astronaut_sheet = ServiceLocator.images_service.get("img/astronaut.png")
     astronaut_frame_w = max(1, astronaut_sheet.get_width() // 3)
     astronaut_frame_h = max(1, astronaut_sheet.get_height())
@@ -569,7 +576,7 @@ def create_astronaut(world, spawn_x: float | None = None) -> int:
 
     if spawn_x is None:
         spawn_x = random.uniform(0, world_cfg["width"])
-    spawn_y = world_cfg["height"] - world_cfg["planet_height"] - ground_offset
+    spawn_y = ground_y
 
     entity = world.create_entity()
     world.add_component(entity, Transform(pygame.Vector2(spawn_x, spawn_y)))

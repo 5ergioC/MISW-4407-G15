@@ -19,10 +19,10 @@ class AstronautSystem:
 
     def update(self, world, dt: float) -> None:
         astronaut_cfg = self.world_cfg.get("astronauts", {})
-        ground_y = self.world_cfg["height"] - self.world_cfg["planet_height"] - int(astronaut_cfg.get("ground_offset", 6))
+        ground_y = float(astronaut_cfg.get("ground_y", self.world_cfg["height"] - self.world_cfg["planet_height"] - int(astronaut_cfg.get("ground_offset", 6))))
         walk_speed = float(astronaut_cfg.get("walk_speed", 8.0))
         rescue_distance = 14.0
-        carry_offset = 12.0
+        carry_offset = 10.0
         score_cfg = ServiceLocator.config.get("scoring")
 
         player_data = list(world.get_components(Transform, Velocity, Player))
@@ -60,7 +60,8 @@ class AstronautSystem:
                     astronaut.carrier_entity = player_entity
                     astronaut.rescued_from_fall = True
                     player_component.carried_astronaut = astronaut_entity
-                    create_score_event(world, int(score_cfg.get("astronaut_rescued_falling", 0)))
+                    transform.position.x = player_transform.position.x
+                    transform.position.y = player_transform.position.y + carry_offset
                     state.name = "carried_by_player"
                     state.elapsed = 0.0
                     velocity.value.update(0.0, 0.0)
@@ -94,19 +95,23 @@ class AstronautSystem:
                 velocity.value.update(0.0, 0.0)
                 state.name = "carried_by_player"
                 state.elapsed += dt
-                if player_transform.position.y >= ground_y - 18 and abs(player_velocity.value.y) < 40.0:
-                    astronaut.state = "deposited"
+                if player_transform.position.y >= ground_y - 1:
+                    astronaut.deposited = True
+                    rescue_score = int(score_cfg.get("astronaut_rescued_falling", 0)) if astronaut.rescued_from_fall else int(score_cfg.get("astronaut_deposited", 0))
+                    create_score_event(world, rescue_score)
+                    astronaut.rescued_from_fall = False
+                    astronaut.state = "walking"
                     astronaut.carrier_entity = None
                     player_component.carried_astronaut = None
                     transform.position.y = ground_y
                     velocity.value.update(0.0, 0.0)
-                    state.name = "deposited"
+                    state.name = "walking"
                     state.elapsed = 0.0
+                    if abs(velocity.value.x) < 0.1:
+                        velocity.value.x = walk_speed
                 continue
 
             if astronaut.state == "deposited":
-                astronaut.deposited = True
-                create_score_event(world, int(score_cfg.get("astronaut_deposited", 0)))
                 astronaut.state = "walking"
                 state.name = "walking"
                 state.elapsed = 0.0
