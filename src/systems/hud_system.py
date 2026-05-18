@@ -98,7 +98,10 @@ class HUDSystem:
         astronauts_value = ServiceLocator.texts_service.render(font_path, 7, f"{astronaut_count:02}", value_color)
         surface.blit(enemies_label, enemies_label.get_rect(topright=(314, 6)))
         surface.blit(enemies_value, enemies_value.get_rect(topright=(314, 10)))
-        surface.blit(astronauts_value, astronauts_value.get_rect(topright=(314, 28)))
+        icon_x = 274
+        icon_y = 28
+        surface.blit(self.astronaut_icon, (icon_x, icon_y))
+        surface.blit(astronauts_value, astronauts_value.get_rect(topleft=(icon_x + 14, icon_y + 1)))
 
     def _render_scanner(
         self,
