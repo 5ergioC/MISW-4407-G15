@@ -13,12 +13,13 @@ from src.components.score_value import ScoreValue
 from src.components.state import State
 from src.components.tag import Tag
 from src.components.transform import Transform
+from src.components.laser import Laser
 from src.engine.service_locator import ServiceLocator
 from src.factories.entity_factory import create_astronaut_death_fx, create_enemy_death_fx, create_score_event
 
 
 class CollisionSystem:
-    def update(self, world, dt: float, camera: Camera, on_player_enemy_collision=None) -> None:
+    def update(self, world, dt: float, camera: Camera, on_player_enemy_collision=None, player_invulnerable: bool = False) -> None:
         del dt
 
         players = list(world.get_components(Transform, Collider, Player, Renderable))
@@ -33,6 +34,7 @@ class CollisionSystem:
             for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in projectiles:
                 if projectile_component.owner != "player":
                     continue
+                is_laser = world.has_component(projectile_entity, Laser) and world.component_for_entity(projectile_entity, Laser).pierces
                 projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
                 for enemy_entity, (enemy_transform, enemy_collider, enemy_renderable, enemy_tag) in enemies:
                     if enemy_entity in enemies_to_delete or not enemy_tag.has("enemy"):
@@ -43,7 +45,9 @@ class CollisionSystem:
                     if not projectile_rect.colliderect(enemy_rect):
                         continue
                     enemies_to_delete.add(enemy_entity)
-                    player_projectiles_to_delete.add(projectile_entity)
+                    # if the projectile is a laser that pierces, don't delete it on impact
+                    if not is_laser:
+                        player_projectiles_to_delete.add(projectile_entity)
                     self._release_carried_astronaut(world, enemy_entity)
                     if world.has_component(enemy_entity, ScoreValue):
                         create_score_event(world, world.component_for_entity(enemy_entity, ScoreValue).amount)
@@ -87,9 +91,13 @@ class CollisionSystem:
             for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in projectiles:
                 if projectile_component.owner != "player":
                     continue
+                is_laser = world.has_component(projectile_entity, Laser) and world.component_for_entity(projectile_entity, Laser).pierces
                 projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
                 for astronaut_entity, (astronaut_transform, astronaut_collider, astronaut_component, astronaut_renderable, astronaut_tag) in astronauts:
                     if not astronaut_tag.has("astronaut") or astronaut_component.state == "dead":
+                        continue
+
+                    if not self._is_on_screen(astronaut_transform, astronaut_collider, astronaut_renderable, camera):
                         continue
                     astronaut_rect = self._build_rect(astronaut_transform, astronaut_collider, astronaut_renderable)
                     if not projectile_rect.colliderect(astronaut_rect):
@@ -99,7 +107,9 @@ class CollisionSystem:
                     astronaut_renderable.visible = False
                     create_astronaut_death_fx(world, astronaut_transform.position.copy())
                     astronauts_to_hide.add(astronaut_entity)
-                    player_projectiles_to_delete.add(projectile_entity)
+                    # lasers pierce astronauts too (do not delete projectile)
+                    if not is_laser:
+                        player_projectiles_to_delete.add(projectile_entity)
                     create_score_event(world, int(ServiceLocator.config.get("scoring").get("accidental_astronaut_kill", 0)))
             for astronaut_entity in astronauts_to_hide:
                 if world.has_component(astronaut_entity, State):
@@ -108,28 +118,38 @@ class CollisionSystem:
                 world.delete_entity(projectile_entity, immediate=True)
 
         if players and enemy_projectiles:
-            enemy_projectiles_to_delete: set[int] = set()
-            for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in enemy_projectiles:
-                if projectile_component.owner != "enemy":
-                    continue
-                projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
-                for player_entity, (player_transform, player_collider, player_component, player_renderable) in players:
-                    player_rect = self._build_rect(player_transform, player_collider, player_renderable)
-                    if not projectile_rect.colliderect(player_rect):
+            if player_invulnerable:
+                enemy_projectiles_to_delete: set[int] = set()
+                for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in enemy_projectiles:
+                    if projectile_component.owner == "enemy":
+                        enemy_projectiles_to_delete.add(projectile_entity)
+                for projectile_entity in enemy_projectiles_to_delete:
+                    world.delete_entity(projectile_entity, immediate=True)
+            else:
+                enemy_projectiles_to_delete: set[int] = set()
+                for projectile_entity, (projectile_transform, projectile_collider, projectile_component, projectile_renderable) in enemy_projectiles:
+                    if projectile_component.owner != "enemy":
                         continue
-                    enemy_projectiles_to_delete.add(projectile_entity)
-                    del player_entity
-                    if on_player_enemy_collision is not None:
-                        on_player_enemy_collision(player_transform.position.copy())
-                    for projectile_entity in enemy_projectiles_to_delete:
-                        world.delete_entity(projectile_entity, immediate=True)
-                    return
+                    projectile_rect = self._build_rect(projectile_transform, projectile_collider, projectile_renderable)
+                    for player_entity, (player_transform, player_collider, player_component, player_renderable) in players:
+                        player_rect = self._build_rect(player_transform, player_collider, player_renderable)
+                        if not projectile_rect.colliderect(player_rect):
+                            continue
+                        enemy_projectiles_to_delete.add(projectile_entity)
+                        del player_entity
+                        if on_player_enemy_collision is not None:
+                            on_player_enemy_collision(player_transform.position.copy())
+                        for projectile_entity in enemy_projectiles_to_delete:
+                            world.delete_entity(projectile_entity, immediate=True)
+                        return
 
         if not players or not enemies:
             return
 
         enemy_death_sound = ServiceLocator.config.get("audio")["sounds"].get("enemy_die")
         for player_entity, (player_transform, player_collider, player_component, player_renderable) in players:
+            if player_invulnerable:
+                continue
             player_rect = self._build_rect(player_transform, player_collider, player_renderable)
             for enemy_entity, (enemy_transform, enemy_collider, enemy_renderable, enemy_tag) in enemies:
                 if not enemy_tag.has("enemy"):

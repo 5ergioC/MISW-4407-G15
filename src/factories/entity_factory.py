@@ -473,7 +473,7 @@ def _generate_planet_points(
         y = target_y
     if points[-1][0] < width:
         points.append((float(width), float(round(y))))
-    # blend last 15% toward start y for seamless wraparound
+
     if len(points) > 20:
         blend_count = max(8, len(points) // 7)
         start_y = points[0][1]
@@ -511,6 +511,7 @@ def create_input_commands(world) -> None:
         pygame.K_p: "PLAYER_PAUSE",
         pygame.K_o: "PLAYER_LOSE_LIFE",
         pygame.K_v: "PLAYER_WIN",
+        pygame.K_i: "PLAYER_INVULNERABLE",
         pygame.K_ESCAPE: "PLAYER_MENU",
         pygame.K_h: "TOGGLE_ENEMY_FIRE",
     }

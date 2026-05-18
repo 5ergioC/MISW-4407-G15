@@ -11,8 +11,8 @@
       "h": 8
     },
     "speed": 42.0,
-    "vertical_speed": 30.0,
-    "abduction_speed": 18.0,
+    "vertical_speed": 18.0,
+    "abduction_speed": 9.0,
     "seek_radius": 90.0,
     "capture_distance": 18.0,
     "top_escape_y": 20.0,

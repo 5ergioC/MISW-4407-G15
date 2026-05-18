@@ -6,12 +6,14 @@ from src.components.player import Player
 from src.components.renderable import Renderable
 from src.components.transform import Transform
 from src.components.velocity import Velocity
+from src.engine.service_locator import ServiceLocator
 
 _BURNER_IDLE_OFFSET_X = 6
 _BURNER_MOVE_OFFSET_X = 9
 _BURNER_IDLE_FRAME_W = 8
 _BURNER_MOVE_FRAME_W = 13
 _BURNER_FRAME_TIME = 0.08
+_TURN_DELAY = 0.24
 
 
 import pygame
@@ -69,9 +71,13 @@ class PlayerMovementSystem:
         burner_r.sprite_frame = player.burner_frame
 
     def update(self, world, dt: float) -> None:
+        player_cfg = ServiceLocator.config.get("player")
+        vertical_drag = float(player_cfg.get("vertical_drag", player_cfg.get("drag", 0.9)))
         for entity, (transform, velocity, player) in world.get_components(Transform, Velocity, Player):
+            input_x = player.thrust_input.x
             velocity.value += player.thrust_input * player.thrust * dt
-            velocity.value *= player.drag ** (dt * 60.0)
+            velocity.value.x *= player.drag ** (dt * 60.0)
+            velocity.value.y *= vertical_drag ** (dt * 60.0)
             velocity.value.x = max(-player.max_speed_x, min(player.max_speed_x, velocity.value.x))
             velocity.value.y = max(-player.max_speed_y, min(player.max_speed_y, velocity.value.y))
             if velocity.value.length_squared() > player.max_speed * player.max_speed:
@@ -85,8 +91,17 @@ class PlayerMovementSystem:
                 velocity.value.y = min(0.0, velocity.value.y)
             thrusting = player.thrust_input.length_squared() > 0.01
             player.is_thrusting = thrusting
-            if math.fabs(velocity.value.x) > 0.01:
-                player.facing = 1.0 if velocity.value.x >= 0 else -1.0
+            if math.fabs(input_x) > 0.01:
+                desired_facing = 1.0 if input_x > 0 else -1.0
+                if desired_facing != player.facing:
+                    player.turn_timer += dt
+                    if player.turn_timer >= _TURN_DELAY:
+                        player.facing = desired_facing
+                        player.turn_timer = 0.0
+                else:
+                    player.turn_timer = 0.0
+            else:
+                player.turn_timer = 0.0
             if world.has_component(entity, Renderable):
                 world.component_for_entity(entity, Renderable).flip_x = player.facing < 0
             self._sync_burner(world, player, transform, dt, velocity.value)

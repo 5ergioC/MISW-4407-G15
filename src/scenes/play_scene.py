@@ -103,6 +103,7 @@ class PlayScene(Scene):
         self._player_exploded = False
         self._player_flash_timer = 0.0
         self._player_flash_duration = 0.45
+        self.player_invulnerable = False
         self._create_world()
         self.enemy_fire_disabled = not self.enemy_fire_system.enabled
 
@@ -138,7 +139,7 @@ class PlayScene(Scene):
             velocity.value = pygame.Vector2(0, 0)
             renderable.color = pygame.Color(255, 50, 50)
 
-    # Death animation: frame timings (seconds per blink step)
+
     _DEATH_BLINK = 0.09   # on/off duration per blink
     _DEATH_FRAMES = 3     # frames in player_death.png
 
@@ -147,7 +148,7 @@ class PlayScene(Scene):
             return
         self._player_flash_timer += dt
 
-        # Sequence per frame: on-off-on-off = 4 blinks = 4 * 2 * BLINK seconds
+
         blinks_per_frame = 2
         step_duration = self._DEATH_BLINK
         frame_duration = blinks_per_frame * 2 * step_duration  # 0.36s per frame
@@ -155,11 +156,11 @@ class PlayScene(Scene):
 
         t = self._player_flash_timer
         if t >= total_flash:
-            # Trigger explosion
+
             self._player_exploded = True
             for _, (transform, _, player, renderable) in self.world.get_components(Transform, Velocity, Player, Renderable):
                 renderable.visible = False
-                # hide burner too
+
                 if player.burner_entity >= 0 and self.world.has_component(player.burner_entity, Renderable):
                     self.world.component_for_entity(player.burner_entity, Renderable).visible = False
                 from src.factories.entity_factory import create_explosion
@@ -250,6 +251,11 @@ class PlayScene(Scene):
                 self.enemy_fire_system.enabled = not getattr(self.enemy_fire_system, "enabled", True)
                 self.enemy_fire_disabled = not self.enemy_fire_system.enabled
 
+        elif c_input.name == "PLAYER_INVULNERABLE":
+            if c_input.phase == CommandPhase.START:
+                self.player_invulnerable = not self.player_invulnerable
+                self.engine.shared_state["player_invulnerable"] = self.player_invulnerable
+
         elif c_input.name == "PLAYER_LOSE_LIFE":
             if c_input.phase == CommandPhase.START:
                 lives = int(self.engine.shared_state["lives"])
@@ -288,6 +294,7 @@ class PlayScene(Scene):
         self.shooting_system.update(dt)
         self.enemy_spawn_system.update(self.world, dt)
         self.enemy_fire_system.set_wave_context(self.enemy_spawn_system.current_wave())
+        self.enemy_fire_system.mute_fire_sound = self.player_invulnerable
         self.lander_ai_system.update(self.world, dt)
         self.mutant_ai_system.update(self.world, dt)
         self.enemy_fire_system.update(self.world, dt, self.camera)
@@ -298,7 +305,13 @@ class PlayScene(Scene):
         self.velocity_system.update(self.world, dt)
         self.projectile_system.update(self.world, dt)
         self.wraparound_system.update(self.world, dt)
-        self.collision_system.update(self.world, dt, self.camera, self._on_player_enemy_collision)
+        self.collision_system.update(
+            self.world,
+            dt,
+            self.camera,
+            self._on_player_enemy_collision,
+            self.player_invulnerable,
+        )
         self.particle_system.update(self.world, dt)
         self.animation_system.update(self.world, dt)
         self.planet_system.update(self.world, dt)
@@ -351,6 +364,7 @@ class PlayScene(Scene):
             enemy_count,
             astronaut_count,
             self.enemy_fire_disabled,
+            self.player_invulnerable,
             abduction_world_x,
         )
         self.debug_system.render(self.world, surface, self.camera)
