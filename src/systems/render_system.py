@@ -65,9 +65,11 @@ class RenderSystem:
         h = max(1, round(renderable.size.y))
         steps = renderable.trail_length
         dx = int(-renderable.trail_dir)
+        laser_w = round(renderable.size.x)
+        # Trail origin: for rightward (dx=-1) starts at sx; for leftward (dx=+1) starts at sx+laser_w
+        trail_origin = sx if dx < 0 else sx + laser_w
         for i in range(1, steps + 1):
             t = i / (steps + 1)
-            
             if t < 0.4:
                 ratio = t / 0.4
                 r = int(255 + (c.r - 255) * ratio)
@@ -78,7 +80,7 @@ class RenderSystem:
                 r = int(c.r * (1.0 - ratio))
                 g = int(c.g * (1.0 - ratio))
                 b = int(c.b * (1.0 - ratio))
-            tx = sx + dx * i
+            tx = trail_origin + dx * i
             pygame.draw.rect(surface, pygame.Color(r, g, b), pygame.Rect(tx, sy, 2, h))
 
     def _world_to_screen_x(self, x: float, camera: Camera, parallax: float) -> float:
