@@ -99,7 +99,15 @@ def create_laser(world, position: pygame.Vector2, direction: float, owner_veloci
     entity = world.create_entity()
     velocity = pygame.Vector2(direction * player_cfg["laser_speed"] + owner_velocity_x, 0)
     laser_size = pygame.Vector2(40, 1)
-    world.add_component(entity, Transform(position.copy()))
+    _trail = 16  # must match trail_length below
+    spawn = position.copy()
+    if direction > 0:
+        # Shift right so trail starts at ship nose, not behind
+        spawn.x += _trail
+    else:
+        # Shift left so laser right edge aligns with ship nose
+        spawn.x -= laser_size.x
+    world.add_component(entity, Transform(spawn))
     world.add_component(entity, Velocity(velocity))
     world.add_component(
         entity,
@@ -108,7 +116,7 @@ def create_laser(world, position: pygame.Vector2, direction: float, owner_veloci
             size=laser_size,
             color=pygame.Color(255, 240, 150),
             layer=8,
-            trail_length=30,
+            trail_length=16,
             trail_dir=direction,
         ),
     )
