@@ -34,8 +34,12 @@ class MenuScene(Scene):
     def handle_event(self, event: pygame.event.Event) -> None:
         self.input_system.process_event(self.world, event)
 
+    _ATTRACT_TIMEOUT = 15.0
+
     def update(self, dt: float) -> None:
         self.elapsed += dt
+        if self.elapsed >= self._ATTRACT_TIMEOUT:
+            self.switch_to("attract")
 
     def render(self) -> None:
         surface = self.virtual_screen
@@ -101,12 +105,16 @@ class MenuScene(Scene):
             pygame.draw.line(surface, orange, shifted[index], shifted[index + 1], 1)
 
     def _render_scanner_frame(self, surface: pygame.Surface) -> None:
-        green = pygame.Color(52, 174, 45)
-        pygame.draw.line(surface, green, (0, 42), (320, 42), 2)
-        pygame.draw.rect(surface, green, pygame.Rect(88, 1, 146, 40), 2)
-        pygame.draw.rect(surface, green, pygame.Rect(234, 1, 86, 40), 2)
-        mini_terrain = [(92 + index * 4, 34 + math.sin(index * 0.7) * 3) for index in range(34)]
+        phase = int(self._elapsed_color() * 8) % 6
+        colors = [(255,40,40),(255,197,67),(246,245,89),(78,202,74),(80,160,255),(255,80,230)]
+        border = pygame.Color(*colors[phase])
+        pygame.draw.line(surface, border, (0, 42), (320, 42), 2)
+        pygame.draw.rect(surface, border, pygame.Rect(91, 4, 142, 32), 2)
+        mini_terrain = [(93 + index * 4, 28 + math.sin(index * 0.7) * 4) for index in range(34)]
         pygame.draw.lines(surface, pygame.Color(205, 106, 42), False, mini_terrain, 1)
+
+    def _elapsed_color(self) -> float:
+        return self.elapsed
 
     def _render_title(self, surface: pygame.Surface) -> None:
         font_path = self.interface_cfg["font"]["path"]

@@ -13,6 +13,7 @@ class WinScene(Scene):
     def enter(self) -> None:
         self.interface_cfg = ServiceLocator.config.get("interface")
         self.hs_system = HighScoreSystem(ServiceLocator.config._config_path)
+        self.elapsed = 0.0
         self.input_system = InputCommandSystem(
             {
                 pygame.K_RETURN: SceneCommand(self._on_confirm),
@@ -31,18 +32,37 @@ class WinScene(Scene):
         self.input_system.process_event(self.world, event)
 
     def update(self, dt: float) -> None:
-        del dt
+        self.elapsed += dt
 
     def render(self) -> None:
         surface = self.virtual_screen
+        surface.fill((0, 0, 0))
         font_path = self.interface_cfg["font"]["path"]
-        high_score_color = self.interface_cfg["high_score_color"]
-        normal_color = self.interface_cfg["normal_text_color"]
-        title = ServiceLocator.texts_service.render(
-            font_path, 12, "LEVEL COMPLETE", (high_score_color["r"], high_score_color["g"], high_score_color["b"])
+        white = (245, 245, 245)
+        yellow = (255, 244, 72)
+        cyan = (80, 210, 255)
+
+        phase = int(self.elapsed * 6) % 6
+        colors = [(255,40,40),(255,197,67),(246,245,89),(78,202,74),(80,160,255),(255,80,230)]
+
+        title = ServiceLocator.texts_service.render_dynamic(font_path, 10, "LEVEL COMPLETE", colors[phase])
+        score = int(self.engine.shared_state.get("score", 0))
+        score_label = ServiceLocator.texts_service.render(font_path, 7, "SCORE", white)
+        score_val = ServiceLocator.texts_service.render_dynamic(font_path, 14, f"{score:06}", yellow)
+
+        hs = self.hs_system.scores[0]["score"] if self.hs_system.scores else 0
+        is_record = score >= hs
+        hs_label = ServiceLocator.texts_service.render_dynamic(
+            font_path, 7, "NEW RECORD!" if is_record else "BEST", colors[phase] if is_record else white
         )
-        prompt = ServiceLocator.texts_service.render(
-            font_path, 8, "Press ENTER to return", (normal_color["r"], normal_color["g"], normal_color["b"])
-        )
-        surface.blit(title, title.get_rect(center=(160, 104)))
-        surface.blit(prompt, prompt.get_rect(center=(160, 144)))
+        hs_val = ServiceLocator.texts_service.render(font_path, 8, f"{hs:06}", cyan)
+
+        prompt = ServiceLocator.texts_service.render(font_path, 7, "PRESS ENTER", white)
+
+        surface.blit(title,       title.get_rect(center=(160, 72)))
+        surface.blit(score_label, score_label.get_rect(center=(160, 100)))
+        surface.blit(score_val,   score_val.get_rect(center=(160, 116)))
+        surface.blit(hs_label,    hs_label.get_rect(center=(160, 142)))
+        surface.blit(hs_val,      hs_val.get_rect(center=(160, 156)))
+        if int(self.elapsed * 2) % 2 == 0:
+            surface.blit(prompt,  prompt.get_rect(center=(160, 190)))
