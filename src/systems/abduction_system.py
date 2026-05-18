@@ -20,7 +20,8 @@ class AbductionSystem:
     def update(self, world, dt: float) -> None:
         capture_sound = self.audio_cfg["sounds"].get("lander_capture_astronaut")
         mutate_sound = self.audio_cfg["sounds"].get("lander_mutate_astronaut")
-        carry_offset = pygame.Vector2(0, 12)
+
+        carry_offset = pygame.Vector2(0, 10)
 
         for enemy_entity, (enemy_transform, enemy_velocity, enemy, enemy_state, enemy_tag) in world.get_components(
             Transform, Velocity, Enemy, State, Tag
@@ -51,8 +52,27 @@ class AbductionSystem:
                 enemy_velocity.value.update(0.0, 0.0)
                 if mutate_sound:
                     create_audio_event(world, mutate_sound)
+
+                if enemy.carried_entity is None:
+                    enemy.target_entity = None
+                    enemy.alerting = False
+                    enemy_state.name = "patrol"
+                    enemy.state = "patrol"
+                    continue
+
                 create_astronaut_death_fx(world, astronaut_transform.position.copy())
-                create_mutant(world)
+
+                mutant_ent = create_mutant(world)
+                try:
+                    if world.has_component(mutant_ent, Transform):
+                        mutant_tr = world.component_for_entity(mutant_ent, Transform)
+                        mutant_tr.position = enemy_transform.position.copy()
+                    if world.has_component(mutant_ent, Velocity):
+                        mutant_vel = world.component_for_entity(mutant_ent, Velocity)
+                        mutant_vel.value.y = abs(mutant_vel.value.y) or float(self.enemies_cfg.get("mutant", {}).get("speed", 70.0)) * 0.25
+                except Exception:
+                    pass
+
                 world.delete_entity(astronaut_entity, immediate=True)
                 world.delete_entity(enemy_entity, immediate=True)
                 continue
@@ -74,8 +94,26 @@ class AbductionSystem:
                 enemy_velocity.value.y = -abduction_speed
                 astronaut_transform.position = enemy_transform.position + carry_offset
                 astronaut_velocity.value.update(0.0, 0.0)
-                if enemy_transform.position.y <= top_escape_y:
+
+                if enemy_transform.position.y <= top_escape_y and enemy.carried_entity is not None:
+
                     enemy_velocity.value.update(0.0, 0.0)
-                    enemy_state.name = "transform_to_mutant"
-                    enemy_state.elapsed = 0.0
-                    enemy.state = "transform_to_mutant"
+                    if mutate_sound:
+                        create_audio_event(world, mutate_sound)
+                    create_astronaut_death_fx(world, astronaut_transform.position.copy())
+                    mutant_ent = create_mutant(world)
+                    try:
+                        if world.has_component(mutant_ent, Transform):
+                            mutant_tr = world.component_for_entity(mutant_ent, Transform)
+                            mutant_tr.position = enemy_transform.position.copy()
+                        if world.has_component(mutant_ent, Velocity):
+                            mutant_vel = world.component_for_entity(mutant_ent, Velocity)
+
+                            mutant_vel.value.x = enemy_velocity.value.x
+                            mutant_vel.value.y = abs(mutant_vel.value.y) or float(self.enemies_cfg.get("mutant", {}).get("speed", 70.0)) * 0.25
+                    except Exception:
+                        pass
+
+                    world.delete_entity(astronaut_entity, immediate=True)
+                    world.delete_entity(enemy_entity, immediate=True)
+                    continue
