@@ -40,7 +40,12 @@ class ECSWorld:
 
     def delete_entity(self, entity: int, immediate: bool = False) -> None:
         self._activate()
-        esper.delete_entity(entity, immediate=immediate)
+        try:
+            esper.delete_entity(entity, immediate=immediate)
+        except KeyError:
+            # Collision and lifetime passes may attempt to delete the same
+            # entity twice from different snapshots in the same frame.
+            return
 
     def clear_database(self) -> None:
         self._activate()

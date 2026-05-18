@@ -94,6 +94,7 @@ class CollisionSystem:
                     astronaut_rect = self._build_rect(astronaut_transform, astronaut_collider, astronaut_renderable)
                     if not projectile_rect.colliderect(astronaut_rect):
                         continue
+                    self._clear_astronaut_bindings(world, astronaut_entity, astronaut_component)
                     astronaut_component.state = "dead"
                     astronaut_renderable.visible = False
                     create_astronaut_death_fx(world, astronaut_transform.position.copy())
@@ -138,10 +139,12 @@ class CollisionSystem:
                 enemy_rect = self._build_rect(enemy_transform, enemy_collider, enemy_renderable)
                 if not player_rect.colliderect(enemy_rect):
                     continue
+                self._release_carried_astronaut(world, enemy_entity)
                 enemy_renderable.visible = False
                 create_enemy_death_fx(world, pygame.Vector2(enemy_rect.centerx, enemy_rect.centery))
                 if enemy_death_sound:
                     ServiceLocator.sounds_service.play(enemy_death_sound)
+                world.delete_entity(enemy_entity, immediate=True)
                 del player_entity
                 del enemy_entity
                 if on_player_enemy_collision is not None:
@@ -191,3 +194,23 @@ class CollisionSystem:
             astronaut_state.elapsed = 0.0
         if world.has_component(astronaut_entity, Renderable):
             world.component_for_entity(astronaut_entity, Renderable).visible = True
+
+    def _clear_astronaut_bindings(self, world, astronaut_entity: int, astronaut: Astronaut) -> None:
+        carrier_entity = astronaut.carrier_entity
+        if carrier_entity is None:
+            return
+
+        if world.has_component(carrier_entity, Player):
+            player = world.component_for_entity(carrier_entity, Player)
+            if player.carried_astronaut == astronaut_entity:
+                player.carried_astronaut = None
+
+        if world.has_component(carrier_entity, Enemy):
+            enemy = world.component_for_entity(carrier_entity, Enemy)
+            if enemy.carried_entity == astronaut_entity:
+                enemy.carried_entity = None
+            if enemy.target_entity == astronaut_entity:
+                enemy.target_entity = None
+                enemy.alerting = False
+
+        astronaut.carrier_entity = None
