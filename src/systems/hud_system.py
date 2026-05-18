@@ -92,8 +92,11 @@ class HUDSystem:
 
     def _render_counts(self, surface: pygame.Surface, font_path: str, enemy_count: int, astronaut_count: int) -> None:
         value_color = (255, 244, 72)
+        label_color = (255, 255, 255)
+        enemies_label = ServiceLocator.texts_service.render(font_path, 7, "ENEMIES", label_color)
         enemies_value = ServiceLocator.texts_service.render(font_path, 8, f"{enemy_count:02}", value_color)
         astronauts_value = ServiceLocator.texts_service.render(font_path, 7, f"{astronaut_count:02}", value_color)
+        surface.blit(enemies_label, enemies_label.get_rect(topright=(314, 6)))
         surface.blit(enemies_value, enemies_value.get_rect(topright=(314, 10)))
         surface.blit(astronauts_value, astronauts_value.get_rect(topright=(314, 28)))
 
