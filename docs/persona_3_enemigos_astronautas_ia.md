@@ -193,21 +193,39 @@ Una tarea de este rol esta terminada cuando:
 
 ## Checklist de rubrica asignada
 
-- [ ] Astronautas en el suelo.
-- [ ] Astronautas se desplazan levemente.
-- [ ] Landers generados progresivamente.
-- [ ] Landers se mueven.
-- [ ] Landers disparan.
-- [ ] Landers capturan astronautas.
-- [ ] Alerta de captura.
-- [ ] Flecha de rapto o datos para minimapa.
-- [ ] Lander asciende con astronauta.
-- [ ] Lander se transforma en Mutant.
-- [ ] Astronauta cae si Lander muere.
-- [ ] Astronauta muere por caida alta.
-- [ ] Astronauta rescatable y depositable.
-- [ ] Mutant implementado.
-- [ ] Balas enemigas ocasionales.
-- [ ] Misiles enemigos menos frecuentes.
-- [ ] State aplicado a IA.
+- [x] Astronautas en el suelo.
+- [x] Astronautas se desplazan levemente.
+- [x] Landers generados progresivamente.
+- [x] Landers se mueven.
+- [x] Landers disparan.
+- [x] Landers capturan astronautas.
+- [x] Alerta de captura.
+- [x] Flecha de rapto o datos para minimapa.
+- [x] Lander asciende con astronauta.
+- [x] Lander se transforma en Mutant.
+- [x] Astronauta cae si Lander muere.
+- [x] Astronauta muere por caida alta.
+- [x] Astronauta rescatable y depositable.
+- [x] Mutant implementado.
+- [x] Balas enemigas ocasionales.
+- [x] Misiles enemigos menos frecuentes.
+- [x] State aplicado a IA.
+
+## Estado actual de Persona 3
+
+La parte asignada a Persona 3 se considera implementada y conectada al flujo principal.
+
+Cobertura actual:
+
+- Landers y Mutants activos con estados explicitos.
+- Rapto, ascenso, mutacion y liberacion del astronauta.
+- Astronautas en suelo, caida, muerte, rescate y deposito.
+- Balas enemigas y misiles activos en olas.
+- Flecha de rapto y contador visual por tipo en HUD.
+- Ajustes recientes de UX: mundo horizontal mas corto y navegacion con wraparound real.
+
+Riesgos residuales razonables para la entrega:
+
+- Los comportamientos son simplificados frente al arcade original para mantener explicacion clara.
+- El ajuste fino de velocidades y frecuencias puede pulirse en integracion final sin cambiar la arquitectura.
 
