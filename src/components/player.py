@@ -17,3 +17,7 @@ class Player:
     vertical_min: float
     vertical_max: float
     facing: float = 1.0
+    burner_entity: int = -1
+    is_thrusting: bool = False
+    burner_frame: int = 0
+    burner_timer: float = 0.0

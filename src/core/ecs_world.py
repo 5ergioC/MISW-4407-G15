@@ -42,6 +42,10 @@ class ECSWorld:
         self._activate()
         esper.delete_entity(entity, immediate=immediate)
 
+    def entity_exists(self, entity: int) -> bool:
+        self._activate()
+        return esper.entity_exists(entity)
+
     def clear_database(self) -> None:
         self._activate()
         esper.clear_database()
