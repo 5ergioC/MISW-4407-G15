@@ -49,8 +49,8 @@ class LanderAISystem:
             current = state.name
             player_visible = False
             if player_pos is not None:
-                dx = abs(player_pos.x - t.position.x)
-                if dx <= self.world_cfg.get("width", 4096) / 2:
+                dx = abs(self._wrapped_dx(t.position.x, player_pos.x))
+                if dx <= self.world_cfg.get("width", 2048) / 2:
                     player_visible = True
 
             if current in ("abducting", "ascending"):
@@ -64,7 +64,7 @@ class LanderAISystem:
                     self._change_state(state, enemy, "seek_astronaut")
 
             if target_position is not None:
-                offset = target_position - t.position
+                offset = self._wrapped_offset(t.position, target_position)
                 if offset.length() <= capture_distance:
                     v.value.update(0.0, 0.0)
                     self._change_state(state, enemy, "abducting")
@@ -81,12 +81,12 @@ class LanderAISystem:
 
             if player_visible and self.rng.random() < min(0.45 * dt, 0.08):
                 self._change_state(state, enemy, "attack_player")
-                v.value.x = self._signed_speed(player_pos.x - t.position.x, patrol_speed)
+                v.value.x = self._signed_speed(self._wrapped_dx(t.position.x, player_pos.x), patrol_speed)
                 v.value.y = 0.0
                 continue
 
             if state.name == "attack_player" and player_visible:
-                v.value.x = self._signed_speed(player_pos.x - t.position.x, patrol_speed)
+                v.value.x = self._signed_speed(self._wrapped_dx(t.position.x, player_pos.x), patrol_speed)
                 v.value.y = 0.0
                 if state.elapsed < 0.8:
                     continue
@@ -108,11 +108,18 @@ class LanderAISystem:
         target_entity: int | None = None
         best_distance = max_distance
         for astronaut_entity, astronaut_position in astronauts.items():
-            distance = lander_position.distance_to(astronaut_position)
+            distance = self._wrapped_offset(lander_position, astronaut_position).length()
             if distance < best_distance:
                 best_distance = distance
                 target_entity = astronaut_entity
         return target_entity
+
+    def _wrapped_dx(self, source_x: float, target_x: float) -> float:
+        world_width = float(self.world_cfg.get("width", 2048))
+        return (target_x - source_x + world_width / 2) % world_width - world_width / 2
+
+    def _wrapped_offset(self, source: pygame.Vector2, target: pygame.Vector2) -> pygame.Vector2:
+        return pygame.Vector2(self._wrapped_dx(source.x, target.x), target.y - source.y)
 
     def _change_state(self, state: State, enemy: Enemy, new_state: str) -> None:
         if state.name != new_state:
