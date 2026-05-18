@@ -26,15 +26,7 @@ class HUDSystem:
         )
         scaled_smart_bomb_icon = pygame.transform.smoothscale(raw_smart_bomb_icon, smart_bomb_size)
         self.smart_bomb_icon = scaled_smart_bomb_icon
-        self.counter_icons = {
-            "lander": self._build_counter_icon("img/enemy_lander.png", frame_count=5, scale=0.58),
-            "mutant": self._build_counter_icon("img/enemy_mutant.png", frame_count=5, scale=0.58),
-            "bomber": self._build_counter_icon("img/enemy_bomber.png", frame_count=5, scale=0.52),
-            "baiter": self._build_counter_icon("img/enemy_baiter.png", frame_count=5, scale=0.52),
-            "swarmer": self._build_counter_icon("img/enemy_swarmer.png", frame_count=1, scale=0.8),
-            "pod": self._build_counter_icon("img/enemy_pod.png", frame_count=1, scale=0.5),
-            "astronaut": self._build_counter_icon("img/astronaut.png", frame_count=3, scale=0.82),
-        }
+        self.astronaut_icon = self._build_counter_icon("img/astronaut.png", frame_count=3, scale=0.82)
 
     def render(
         self,
