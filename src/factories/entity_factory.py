@@ -167,6 +167,7 @@ def create_enemy_missile(
         ),
     )
     world.add_component(entity, Collider(missile_size, pygame.Vector2()))
+    world.add_component(entity, Animation(frame_count=5, frame_time=0.08, loop=True))
     world.add_component(
         entity,
         Projectile(
