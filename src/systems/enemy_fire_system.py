@@ -22,6 +22,7 @@ class EnemyFireSystem:
     def __init__(self) -> None:
         self.enemies_cfg = ServiceLocator.config.get("enemies")
         self.audio_cfg = ServiceLocator.config.get("audio")
+        self.world_cfg = ServiceLocator.config.get("world")
         self.cooldowns: dict[int, float] = {}
         self.rng = random.Random()
         self.enabled: bool = True
@@ -62,7 +63,10 @@ class EnemyFireSystem:
             if not self._is_on_screen(enemy_transform, enemy_renderable, camera):
                 continue
 
-            direction = player_position - enemy_transform.position
+            direction = pygame.Vector2(
+                self._wrapped_dx(enemy_transform.position.x, player_position.x),
+                player_position.y - enemy_transform.position.y,
+            )
             if direction.length_squared() <= 0.01:
                 direction = pygame.Vector2(1, 0)
 
@@ -111,6 +115,10 @@ class EnemyFireSystem:
     def _bullet_spawn_offset(self, direction: pygame.Vector2) -> pygame.Vector2:
         direction = direction.normalize() if direction.length_squared() > 0 else pygame.Vector2(1, 0)
         return direction * 12
+
+    def _wrapped_dx(self, source_x: float, target_x: float) -> float:
+        world_width = float(self.world_cfg.get("width", 2048))
+        return (target_x - source_x + world_width / 2) % world_width - world_width / 2
 
     def _is_on_screen(self, transform: Transform, renderable: Renderable, camera: Camera) -> bool:
         rect = pygame.Rect(

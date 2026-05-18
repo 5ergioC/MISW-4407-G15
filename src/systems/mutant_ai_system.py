@@ -14,6 +14,7 @@ from src.engine.service_locator import ServiceLocator
 class MutantAISystem:
     def __init__(self) -> None:
         self.enemies_cfg = ServiceLocator.config.get("enemies")
+        self.world_cfg = ServiceLocator.config.get("world")
 
     def update(self, world, dt: float) -> None:
         player_position = None
@@ -33,7 +34,7 @@ class MutantAISystem:
             if enemy.kind != "mutant" or not tag.has("enemy"):
                 continue
 
-            offset = player_position - transform.position
+            offset = pygame.Vector2(self._wrapped_dx(transform.position.x, player_position.x), player_position.y - transform.position.y)
             if offset.length_squared() <= 1.0:
                 continue
 
@@ -47,3 +48,7 @@ class MutantAISystem:
             state.name = "chase" if abs(offset.x) > 24.0 else "attack_player"
             state.elapsed += dt
             enemy.state = state.name
+
+    def _wrapped_dx(self, source_x: float, target_x: float) -> float:
+        world_width = float(self.world_cfg.get("width", 2048))
+        return (target_x - source_x + world_width / 2) % world_width - world_width / 2
