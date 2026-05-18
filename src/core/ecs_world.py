@@ -28,11 +28,17 @@ class ECSWorld:
 
     def has_component(self, entity: int, component_type) -> bool:
         self._activate()
-        return esper.has_component(entity, component_type)
+        try:
+            return esper.has_component(entity, component_type)
+        except (KeyError, ValueError):
+            return False
 
     def component_for_entity(self, entity: int, component_type):
         self._activate()
-        return esper.component_for_entity(entity, component_type)
+        try:
+            return esper.component_for_entity(entity, component_type)
+        except (KeyError, ValueError):
+            return None
 
     def get_components(self, *component_types) -> Iterable[tuple[int, tuple]]:
         self._activate()
