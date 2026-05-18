@@ -102,9 +102,11 @@ def create_laser(world, position: pygame.Vector2, direction: float) -> int:
         entity,
         Renderable(
             shape="rect",
-            size=pygame.Vector2(8, 2),
+            size=pygame.Vector2(5, 1),
             color=pygame.Color(255, 240, 150),
             layer=8,
+            trail_length=30,
+            trail_dir=direction,
         ),
     )
     world.add_component(entity, Collider(pygame.Vector2(8, 2), pygame.Vector2()))
@@ -280,6 +282,16 @@ def _generate_planet_points(
             points.append((float(x), float(round(y))))
             x += step
         y = target_y
+    # blend last 15% toward start y for seamless wrap
+    if len(points) > 20:
+        blend_count = max(8, len(points) // 7)
+        start_y = points[0][1]
+        for i in range(blend_count):
+            idx = len(points) - blend_count + i
+            if 0 <= idx < len(points):
+                t = i / blend_count
+                x_coord, y_coord = points[idx]
+                points[idx] = (x_coord, y_coord + (start_y - y_coord) * t)
     if points[-1][0] < width:
         points.append((float(width), float(round(y))))
     return points

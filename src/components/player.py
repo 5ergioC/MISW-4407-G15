@@ -19,5 +19,6 @@ class Player:
     facing: float = 1.0
     burner_entity: int = -1
     is_thrusting: bool = False
+    is_boosting: bool = False
     burner_frame: int = 0
     burner_timer: float = 0.0

@@ -19,3 +19,5 @@ class Renderable:
     points: list[tuple[float, float]] = field(default_factory=list)
     sprite_frame: int = 0
     sprite_frame_width: int = 0
+    trail_length: int = 0
+    trail_dir: float = 0.0

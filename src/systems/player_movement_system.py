@@ -18,7 +18,7 @@ import pygame
 
 
 class PlayerMovementSystem:
-    def _sync_burner(self, world, player, player_transform, dt: float) -> None:
+    def _sync_burner(self, world, player, player_transform, dt: float, velocity=None) -> None:
         bid = player.burner_entity
         if bid < 0:
             return
@@ -34,9 +34,16 @@ class PlayerMovementSystem:
             player_transform.position.y,
         )
         burner_r.flip_x = player.facing < 0
-        burner_r.visible = True
 
-        if player.is_thrusting:
+        speed_sq = velocity.length_squared() if velocity is not None else 0.0
+        moving = speed_sq > 4.0 or player.is_thrusting
+
+        if not moving:
+            burner_r.visible = False
+            return
+
+        burner_r.visible = True
+        if player.is_boosting:
             burner_r.image_path = "img/player_burner_moving.png"
             burner_r.sprite_frame_width = _BURNER_MOVE_FRAME_W
         else:
@@ -51,7 +58,8 @@ class PlayerMovementSystem:
 
     def update(self, world, dt: float) -> None:
         for entity, (transform, velocity, player) in world.get_components(Transform, Velocity, Player):
-            velocity.value += player.thrust_input * player.thrust * dt
+            boost_mult = 1.8 if player.is_boosting else 1.0
+            velocity.value += player.thrust_input * player.thrust * boost_mult * dt
             velocity.value *= player.drag ** (dt * 60.0)
             velocity.value.x = max(-player.max_speed_x, min(player.max_speed_x, velocity.value.x))
             velocity.value.y = max(-player.max_speed_y, min(player.max_speed_y, velocity.value.y))
@@ -70,4 +78,4 @@ class PlayerMovementSystem:
                 player.facing = 1.0 if velocity.value.x >= 0 else -1.0
             if world.has_component(entity, Renderable):
                 world.component_for_entity(entity, Renderable).flip_x = player.facing < 0
-            self._sync_burner(world, player, transform, dt)
+            self._sync_burner(world, player, transform, dt, velocity.value)

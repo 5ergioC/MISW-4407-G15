@@ -22,6 +22,8 @@ class RenderSystem:
                 continue
             screen_x = self._world_to_screen_x(transform.position.x, camera, parallax)
             screen_y = round(transform.position.y - camera.y)
+            if renderable.trail_length > 0:
+                self._draw_trail(surface, renderable, round(screen_x), screen_y)
             if renderable.shape == "rect":
                 rect = pygame.Rect(
                     round(screen_x),
@@ -58,6 +60,27 @@ class RenderSystem:
                 else:
                     rect.topleft = (round(screen_x), screen_y)
                 surface.blit(image, rect)
+
+    def _draw_trail(self, surface: pygame.Surface, renderable, sx: int, sy: int) -> None:
+        c = renderable.color
+        h = max(1, round(renderable.size.y))
+        steps = renderable.trail_length
+        dx = int(-renderable.trail_dir)
+        for i in range(1, steps + 1):
+            t = i / (steps + 1)
+            # fade: white → bullet color → dark
+            if t < 0.4:
+                ratio = t / 0.4
+                r = int(255 + (c.r - 255) * ratio)
+                g = int(255 + (c.g - 255) * ratio)
+                b = int(255 + (c.b - 255) * ratio)
+            else:
+                ratio = (t - 0.4) / 0.6
+                r = int(c.r * (1.0 - ratio))
+                g = int(c.g * (1.0 - ratio))
+                b = int(c.b * (1.0 - ratio))
+            tx = sx + dx * i
+            pygame.draw.rect(surface, pygame.Color(r, g, b), pygame.Rect(tx, sy, 2, h))
 
     def _world_to_screen_x(self, x: float, camera: Camera, parallax: float) -> float:
         world_width = camera.world_width
