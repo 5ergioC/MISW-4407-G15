@@ -29,6 +29,7 @@ from src.systems.astronaut_system import AstronautSystem
 from src.systems.audio_system import AudioSystem
 from src.systems.background_system import BackgroundSystem
 from src.systems.bonus.debug_system import DebugSystem
+from src.systems.gamepad_system import GamepadSystem
 from src.systems.bonus.reward_system import RewardSystem
 from src.systems.bonus.smart_bomb_system import SmartBombSystem
 from src.systems.camera_system import CameraSystem
@@ -88,6 +89,7 @@ class PlayScene(Scene):
         self.particle_system = ParticleSystem()
         self.smart_bomb_system = SmartBombSystem()
         self.debug_system = DebugSystem()
+        self.gamepad_system = GamepadSystem()
         self.reward_system = RewardSystem()
         self.scoring_system = ScoringSystem()
         self.pause_visibility_system = PauseVisibilitySystem()
@@ -282,6 +284,7 @@ class PlayScene(Scene):
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_F1:
             self.debug_system.toggle()
+        self.gamepad_system.handle_event(event)
         system_input_command(self.world, event, self._do_action)
 
     def update(self, dt: float) -> None:
@@ -307,6 +310,7 @@ class PlayScene(Scene):
             if self.player_respawn_timer <= 0.0:
                 self._finish_player_respawn()
             return
+        self.gamepad_system.update(self.world, self._do_action)
         self.shooting_system.update(dt)
         self.enemy_spawn_system.update(self.world, dt)
         self.engine.shared_state["wave"] = self.enemy_spawn_system.wave_index

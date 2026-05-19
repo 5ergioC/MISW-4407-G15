@@ -24,7 +24,7 @@
   "extra_bomb_score_interval": 10000,
   "camera": {
     "mode": "defender_look_ahead",
-    "look_ahead_x": 30,
+    "look_ahead_x": 80,
     "smoothness": 5.0,
     "look_ahead_speed_threshold": 24.0
   }

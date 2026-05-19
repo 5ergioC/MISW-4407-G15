@@ -22,6 +22,7 @@ class GameEngine:
         pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=512)
         pygame.init()
         pygame.mixer.init()
+        pygame.joystick.init()
         pygame.display.set_caption(self.window_config["title"])
 
         size = self.window_config["size"]
