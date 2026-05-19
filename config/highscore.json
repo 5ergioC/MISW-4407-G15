@@ -3,6 +3,10 @@
   "max_entries": 5,
   "scores": [
     {
+      "name": "UAA",
+      "score": 34225
+    },
+    {
       "name": "AAA",
       "score": 22875
     },
@@ -17,10 +21,6 @@
     {
       "name": "AAA",
       "score": 475
-    },
-    {
-      "name": "AAA",
-      "score": 300
     }
   ]
 }

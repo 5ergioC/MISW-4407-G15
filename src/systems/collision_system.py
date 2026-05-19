@@ -15,7 +15,8 @@ from src.components.tag import Tag
 from src.components.transform import Transform
 from src.components.laser import Laser
 from src.engine.service_locator import ServiceLocator
-from src.factories.entity_factory import create_astronaut_death_fx, create_enemy_death_fx, create_score_event
+from src.components.enemy import Enemy
+from src.factories.entity_factory import create_astronaut_death_fx, create_explosion, create_score_event
 
 
 class CollisionSystem:
@@ -51,7 +52,8 @@ class CollisionSystem:
                     self._release_carried_astronaut(world, enemy_entity)
                     if world.has_component(enemy_entity, ScoreValue):
                         create_score_event(world, world.component_for_entity(enemy_entity, ScoreValue).amount)
-                    create_enemy_death_fx(world, pygame.Vector2(enemy_rect.centerx, enemy_rect.centery))
+                    _kind = world.component_for_entity(enemy_entity, Enemy).kind if world.has_component(enemy_entity, Enemy) else "generic"
+                    create_explosion(world, pygame.Vector2(enemy_rect.centerx, enemy_rect.centery), kind=_kind, count=14)
                     if enemy_death_sound:
                         ServiceLocator.sounds_service.play(enemy_death_sound)
 

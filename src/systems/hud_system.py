@@ -25,12 +25,12 @@ _ASTRO_COLOR  = pygame.Color(255, 220, 50)
 _PLANET_COLOR = pygame.Color(205, 106, 42)
 
 _ENEMY_DOT_COLORS: dict[str, pygame.Color] = {
-    "lander":  pygame.Color(52, 220, 52),
-    "mutant":  pygame.Color(255, 80, 255),
-    "baiter":  pygame.Color(255, 140, 0),
-    "bomber":  pygame.Color(200, 200, 60),
-    "pod":     pygame.Color(180, 100, 255),
-    "swarmer": pygame.Color(255, 60, 60),
+    "lander":  pygame.Color( 56, 135,   0),  # #388700
+    "mutant":  pygame.Color( 21,  95, 217),  # #155fd9
+    "baiter":  pygame.Color( 38,  91, 110),  # #265b6e
+    "bomber":  pygame.Color(255,  96,  47),  # #ff602f
+    "pod":     pygame.Color(255, 187,   0),  # #ffbb00
+    "swarmer": pygame.Color(171,  68, 214),  # #ab44d6
 }
 
 

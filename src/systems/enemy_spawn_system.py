@@ -37,6 +37,7 @@ class EnemySpawnSystem:
         self.remaining_counts: dict[str, int] = {count_key: 0 for count_key, *_ in SPAWN_TYPES}
         self.spawn_timer = 0.0
         self.rng = random.Random()
+        self.loop_from_wave: int = int(waves_cfg.get("loop_from_wave", max(0, len(self.waves) - 1)))
 
     def update(self, world, dt: float) -> None:
         if not self.waves:
@@ -45,7 +46,8 @@ class EnemySpawnSystem:
         if self.wave_index >= len(self.waves):
             if not self.loop_after_last_wave:
                 return
-            self.wave_index = 0
+            self.wave_index = self.loop_from_wave
+            self.wave_started = False
 
         wave = self.waves[self.wave_index]
         if not self.wave_started:

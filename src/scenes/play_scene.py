@@ -104,6 +104,12 @@ class PlayScene(Scene):
         self._player_flash_timer = 0.0
         self._player_flash_duration = 0.45
         self.player_invulnerable = False
+        self._wave_complete = False
+        self._wave_complete_is_last = False
+        self._wave_complete_timer = 0.0
+        self._wave_complete_duration = 3.5
+        self._wave_bonus = 0
+        self._wave_astronauts_saved = 0
         self._create_world()
         self.enemy_fire_disabled = not self.enemy_fire_system.enabled
 
@@ -281,6 +287,16 @@ class PlayScene(Scene):
     def update(self, dt: float) -> None:
         if self.state == GameState.PAUSED:
             return
+        if self._wave_complete:
+            self._wave_complete_timer -= dt
+            if self._wave_complete_timer <= 0.0:
+                self._wave_complete = False
+                if self._wave_complete_is_last:
+                    self.switch_to("win")
+                else:
+                    next_wave = self.enemy_spawn_system.wave_index + 1
+                    self._start_next_wave(next_wave)
+            return
         if self.player_dying:
             self.player_respawn_timer -= dt
             self._update_player_death_flash(dt)
@@ -293,6 +309,7 @@ class PlayScene(Scene):
             return
         self.shooting_system.update(dt)
         self.enemy_spawn_system.update(self.world, dt)
+        self.engine.shared_state["wave"] = self.enemy_spawn_system.wave_index
         self.enemy_fire_system.set_wave_context(self.enemy_spawn_system.current_wave())
         self.enemy_fire_system.mute_fire_sound = self.player_invulnerable
         self.lander_ai_system.update(self.world, dt)
@@ -368,8 +385,76 @@ class PlayScene(Scene):
             abduction_world_x,
         )
         self.debug_system.render(self.world, surface, self.camera)
+        if self._wave_complete:
+            hud_h = self.hud_system.hud_bottom + 1
+            surface.fill((0, 0, 0), pygame.Rect(0, hud_h, surface.get_width(), surface.get_height() - hud_h))
+            self._render_wave_complete_overlay(surface)
+            self.hud_system.render(
+                surface,
+                self.engine.shared_state,
+                False,
+                self.camera,
+                self.planet_system.points,
+                self.world,
+                0, 0, self.enemy_fire_disabled, self.player_invulnerable, None,
+            )
+
+    def _start_next_wave(self, next_wave_index: int) -> None:
+        lives = int(self.engine.shared_state.get("lives", 3))
+        bombs = int(self.engine.shared_state.get("smart_bombs", 3))
+        self.world.clear_database()
+        self.enemy_spawn_system.wave_index = next_wave_index
+        self.enemy_spawn_system.wave_started = False
+        self.enemy_spawn_system.remaining_counts = {k: 0 for k in self.enemy_spawn_system.remaining_counts}
+        self.enemy_spawn_system.spawn_timer = 0.0
+        self.planet_system._points = []
+        self._player_exploded = False
+        self._player_flash_timer = 0.0
+        self.player_dying = False
+        self.player_death_outcome = None
+        create_starfield(self.world)
+        create_planet(self.world)
+        create_player(self.world)
+        create_input_commands(self.world)
+        create_audio_event(self.world, "snd/game_start.ogg")
+        # Restore lives and bombs from shared_state
+        from src.components.player import Player as PlayerComp
+        for _, (player,) in self.world.get_components(PlayerComp):
+            player.lives = lives
+        self.engine.shared_state["lives"] = lives
+        self.engine.shared_state["smart_bombs"] = bombs
+
+    def _render_wave_complete_overlay(self, surface: pygame.Surface) -> None:
+        font_path = ServiceLocator.config.get("interface")["font"]["path"]
+        wave_num = self.enemy_spawn_system.wave_index + 1
+        colors = [(255,40,40),(255,197,67),(246,245,89),(78,202,74),(80,160,255),(255,80,230)]
+        phase = int(pygame.time.get_ticks() / 120) % len(colors)
+        color = colors[phase]
+        white = (245, 245, 245)
+        yellow = (255, 244, 72)
+
+        title = ServiceLocator.texts_service.render_dynamic(font_path, 10, f"ATTACK WAVE {wave_num}", color)
+        completed = ServiceLocator.texts_service.render_dynamic(font_path, 10, "COMPLETED", color)
+        bonus_text = ServiceLocator.texts_service.render_dynamic(
+            font_path, 8, f"BONUS X {self._wave_bonus}", yellow
+        )
+
+        surface.blit(title, title.get_rect(center=(160, 130)))
+        surface.blit(completed, completed.get_rect(center=(160, 148)))
+        surface.blit(bonus_text, bonus_text.get_rect(center=(160, 172)))
+
+        # astronaut icons
+        astro_icon = ServiceLocator.images_service.get("img/astronaut.png")
+        fw = max(1, astro_icon.get_width() // 3)
+        frame = astro_icon.subsurface(pygame.Rect(0, 0, fw, astro_icon.get_height()))
+        total_w = self._wave_astronauts_saved * (fw + 2)
+        sx = 160 - total_w // 2
+        for i in range(self._wave_astronauts_saved):
+            surface.blit(frame, (sx + i * (fw + 2), 188))
 
     def _evaluate_run_outcome(self) -> None:
+        if self._wave_complete:
+            return
         live_astronauts = 0
         for _, (astronaut, tag) in self.world.get_components(Astronaut, Tag):
             if tag.has("astronaut") and astronaut.state != "dead":
@@ -378,5 +463,17 @@ class PlayScene(Scene):
             self.engine.shared_state["game_over_reason"] = "All astronauts lost"
             self.switch_to("game_over")
             return
-        if self.enemy_spawn_system.is_campaign_complete(self.world):
-            self.switch_to("win")
+        wave = self.enemy_spawn_system
+        wave_cleared = (
+            wave.wave_started and
+            not any(c > 0 for c in wave.remaining_counts.values()) and
+            sum(1 for _, (tag,) in self.world.get_components(Tag) if tag.has("enemy")) == 0
+        )
+        if wave_cleared:
+            is_last = not wave.loop_after_last_wave and wave.wave_index >= len(wave.waves) - 1
+            self._wave_complete = True
+            self._wave_complete_is_last = is_last
+            self._wave_complete_timer = self._wave_complete_duration
+            self._wave_astronauts_saved = live_astronauts
+            self._wave_bonus = live_astronauts * 200
+            self.engine.shared_state["score"] = int(self.engine.shared_state["score"]) + self._wave_bonus
