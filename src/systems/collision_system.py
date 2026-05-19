@@ -16,7 +16,7 @@ from src.components.transform import Transform
 from src.components.laser import Laser
 from src.engine.service_locator import ServiceLocator
 from src.components.enemy import Enemy
-from src.factories.entity_factory import create_astronaut_death_fx, create_explosion, create_score_event
+from src.factories.entity_factory import create_astronaut_death_fx, create_explosion, create_enemy_death_fx, create_score_event
 
 
 class CollisionSystem:
